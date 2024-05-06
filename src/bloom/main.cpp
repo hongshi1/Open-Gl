@@ -375,6 +375,7 @@ int main()
 		glBindVertexArray(0);
 		glDepthFunc(GL_LESS);
 
+		// glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 
 		shader.use();
@@ -656,10 +657,33 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 // 输入监听
 void processInput(GLFWwindow *window)
 {
+	 static bool ctrlPressed = false;  // 用于跟踪 CONTROL 键的状态
+    static bool isCtrlToggleOn = false;  // 用于控制摄像头移动模式切换
 	// 退出窗口
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 	{
 		glfwSetWindowShouldClose(window, true);
+	}
+
+
+	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS && !ctrlPressed)
+    {
+        isCtrlToggleOn = !isCtrlToggleOn;  // 切换状态
+        camera.isHorizontalMode = isCtrlToggleOn;  // 应用状态到摄像机
+        ctrlPressed = true;
+    }
+    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_RELEASE)
+    {
+        ctrlPressed = false;
+    }
+
+    // 检查是否按下 SHIFT 键
+    
+    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+        camera.MovementSpeed = 3.0f;
+    }
+	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE) {
+		camera.MovementSpeed = 1.5f;
 	}
 
 	// 相机移动
@@ -679,14 +703,18 @@ void processInput(GLFWwindow *window)
 	{
 		camera.ProcessKeyboard(RIGHT, deltaTime);
 	}
+	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+	{
+		camera.Jump();
+	}
 
 	// 切换bloom
-	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && !bloomKeyPressed)
+	if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS && !bloomKeyPressed)
 	{
 		bloom = !bloom;
 		bloomKeyPressed = true;
 	}
-	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_RELEASE)
+	if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_RELEASE)
 	{
 		bloomKeyPressed = false;
 	}
