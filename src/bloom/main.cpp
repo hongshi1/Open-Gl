@@ -101,6 +101,52 @@ int main()
 	Shader shaderFinal("./src/bloom/shader/bloom_final_vert.glsl", "./src/bloom/shader/bloom_final_frag.glsl");
 	Shader skyboxShader("./src/bloom/shader/skybox_vert.glsl", "./src/bloom/shader/skybox_frag.glsl");
 
+	// 顶点数组
+	float cubeVertices[] = {
+			// Back face
+			-0.5f, -0.5f, -0.5f, 0.0f, 0.0f, // Bottom-left
+			0.5f, 0.5f, -0.5f, 1.0f, 1.0f,	 // top-right
+			0.5f, -0.5f, -0.5f, 1.0f, 0.0f,	 // bottom-right
+			0.5f, 0.5f, -0.5f, 1.0f, 1.0f,	 // top-right
+			-0.5f, -0.5f, -0.5f, 0.0f, 0.0f, // bottom-left
+			-0.5f, 0.5f, -0.5f, 0.0f, 1.0f,	 // top-left
+			// Front face
+			-0.5f, -0.5f, 0.5f, 0.0f, 0.0f, // bottom-left
+			0.5f, -0.5f, 0.5f, 1.0f, 0.0f,	// bottom-right
+			0.5f, 0.5f, 0.5f, 1.0f, 1.0f,		// top-right
+			0.5f, 0.5f, 0.5f, 1.0f, 1.0f,		// top-right
+			-0.5f, 0.5f, 0.5f, 0.0f, 1.0f,	// top-left
+			-0.5f, -0.5f, 0.5f, 0.0f, 0.0f, // bottom-left
+			// Left face
+			-0.5f, 0.5f, 0.5f, 1.0f, 0.0f,	 // top-right
+			-0.5f, 0.5f, -0.5f, 1.0f, 1.0f,	 // top-left
+			-0.5f, -0.5f, -0.5f, 0.0f, 1.0f, // bottom-left
+			-0.5f, -0.5f, -0.5f, 0.0f, 1.0f, // bottom-left
+			-0.5f, -0.5f, 0.5f, 0.0f, 0.0f,	 // bottom-right
+			-0.5f, 0.5f, 0.5f, 1.0f, 0.0f,	 // top-right
+			// Right face
+			0.5f, 0.5f, 0.5f, 1.0f, 0.0f,		// top-left
+			0.5f, -0.5f, -0.5f, 0.0f, 1.0f, // bottom-right
+			0.5f, 0.5f, -0.5f, 1.0f, 1.0f,	// top-right
+			0.5f, -0.5f, -0.5f, 0.0f, 1.0f, // bottom-right
+			0.5f, 0.5f, 0.5f, 1.0f, 0.0f,		// top-left
+			0.5f, -0.5f, 0.5f, 0.0f, 0.0f,	// bottom-left
+			// Bottom face
+			-0.5f, -0.5f, -0.5f, 0.0f, 1.0f, // top-right
+			0.5f, -0.5f, -0.5f, 1.0f, 1.0f,	 // top-left
+			0.5f, -0.5f, 0.5f, 1.0f, 0.0f,	 // bottom-left
+			0.5f, -0.5f, 0.5f, 1.0f, 0.0f,	 // bottom-left
+			-0.5f, -0.5f, 0.5f, 0.0f, 0.0f,	 // bottom-right
+			-0.5f, -0.5f, -0.5f, 0.0f, 1.0f, // top-right
+			// Top face
+			-0.5f, 0.5f, -0.5f, 0.0f, 1.0f, // top-left
+			0.5f, 0.5f, 0.5f, 1.0f, 0.0f,		// bottom-right
+			0.5f, 0.5f, -0.5f, 1.0f, 1.0f,	// top-right
+			0.5f, 0.5f, 0.5f, 1.0f, 0.0f,		// bottom-right
+			-0.5f, 0.5f, -0.5f, 0.0f, 1.0f, // top-left
+			-0.5f, 0.5f, 0.5f, 0.0f, 0.0f		// bottom-left
+	};
+
 	float skyboxVertices[] = {
 			// positions
 			-1.0f, 1.0f, -1.0f,
@@ -145,17 +191,20 @@ int main()
 			-1.0f, -1.0f, 1.0f,
 			1.0f, -1.0f, 1.0f};
 
-	vector<string> faces{
-			"./static/texture/skybox/right.jpg",
-			"./static/texture/skybox/left.jpg",
-			"./static/texture/skybox/top.jpg",
-			"./static/texture/skybox/bottom.jpg",
-			"./static/texture/skybox/front.jpg",
-			"./static/texture/skybox/back.jpg"};
+	unsigned int cubeVAO, cubeVBO;
+	glGenVertexArrays(1, &cubeVAO);
+	glGenBuffers(1, &cubeVBO);
+	glBindVertexArray(cubeVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), &cubeVertices, GL_STATIC_DRAW);
 
-	unsigned int cubemapTexture = loadCubemap(faces);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
 
-	
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
+	glBindVertexArray(0);
+
 	// skyboxVBO quad VAO
 	unsigned int skyboxVAO, skyboxVBO;
 	glGenVertexArrays(1, &skyboxVAO);
@@ -166,6 +215,17 @@ int main()
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
 
+	// 加载纹理
+	unsigned int cubeTexture = loadTexture("./static/texture/container.jpg", false);
+	vector<std::string> faces
+		{
+			"./static/texture/skybox/right.jpg",
+			"./static/texture/skybox/left.jpg",
+			"./static/texture/skybox/top.jpg",
+			"./static/texture/skybox/bottom.jpg",
+			"./static/texture/skybox/front.jpg",
+			"./static/texture/skybox/back.jpg"};
+	unsigned int cubemapTexture = loadCubemap(faces);
 
 	// 创建imgui上下文
 	// ---------------
@@ -180,14 +240,6 @@ int main()
 	// --------
 	unsigned int woodMap = loadTexture("./static/texture/wood.png", true);
 	unsigned int containerMap = loadTexture("./static/texture/container2.png", true);
-	unsigned int skyboxMap = loadCubemap({
-			"./static/texture/skybox/right.jpg",
-			"./static/texture/skybox/left.jpg",
-			"./static/texture/skybox/top.jpg",
-			"./static/texture/skybox/bottom.jpg",
-			"./static/texture/skybox/front.jpg",
-			"./static/texture/skybox/back.jpg",
-	});
 
 	// 配置浮点帧缓冲区
 	// ----------------
@@ -299,22 +351,17 @@ int main()
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		
-
 		// 1. 将场景渲染到浮点帧缓冲区
 		// ---------------------------
 		glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		glDepthFunc(GL_LEQUAL);
-        skyboxShader.use();
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 		glm::mat4 view = camera.GetViewMatrix();
 		glm::mat4 view1 = camera.GetViewMatrix();
 		glm::mat4 model = glm::mat4(1.0f);
-        // view = glm::mat4(glm::mat3(camera.GetViewMatrix())); // 移除摄像机位置信息
-        // projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-        glDepthFunc(GL_LEQUAL);
+		
+		glDepthFunc(GL_LEQUAL);
 		skyboxShader.use();
 		view1 = glm::mat4(glm::mat3(camera.GetViewMatrix()));
 		// projection = glm::perspective(glm::radians(camera.Zoom), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 100.0f);
@@ -329,7 +376,7 @@ int main()
 		glDepthFunc(GL_LESS);
 
 
-		
+
 		shader.use();
 		shader.setMat4("projection", projection);
 		shader.setMat4("view", view);
@@ -346,12 +393,11 @@ int main()
 		// 创建一个大的立方体作为地板
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f));
-		model = glm::scale(model, glm::vec3(25.0f, 0.0f, 25.0f));
+		model = glm::scale(model, glm::vec3(12.5f, 0.5f, 12.5f));
 		shader.setMat4("model", model);
 		renderCube();
 
 		// 创建多个立方体作为物体
-
 		glBindTexture(GL_TEXTURE_2D, containerMap);
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(0.0f, 1.0f, 0.0f));
@@ -359,17 +405,15 @@ int main()
 		shader.setMat4("model", model);
 		renderCube();
 
-		
-
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(3.0f, 0.0f, 1.0));
+		model = glm::translate(model, glm::vec3(2.0f, 0.0f, 1.0));
 		model = glm::scale(model, glm::vec3(0.5f));
 		shader.setMat4("model", model);
 		renderCube();
 
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.0f, -1.0f, 2.0));
-		model = glm::rotate(model, glm::radians(20.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
+		model = glm::translate(model, glm::vec3(-1.0f, -1.0f, 2.0));
+		model = glm::rotate(model, glm::radians(60.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
 		shader.setMat4("model", model);
 		renderCube();
 
@@ -438,9 +482,6 @@ int main()
 		shaderFinal.setInt("bloom", bloom);
 		shaderFinal.setFloat("exposure", exposure);
 		renderQuad();
-
-		
-		
 
 		//cout << "bloom: " << (bloom ? "on" : "off") << " | exposure: " << exposure << endl;
 
