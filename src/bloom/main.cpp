@@ -238,7 +238,7 @@ int main()
 
 	// 加载贴图
 	// --------
-	unsigned int woodMap = loadTexture("./static/texture/matrix.png", true);
+	unsigned int woodMap = loadTexture("./static/texture/awesomeface.png", true);
 	unsigned int containerMap = loadTexture("./static/texture/container2.png", true);
 
 	// 配置浮点帧缓冲区
