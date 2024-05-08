@@ -42,6 +42,8 @@ bool bloomKeyPressed = false;
 bool bloom = true;
 float exposure = 1.0;
 
+
+
 int main()
 {
 
