@@ -13,6 +13,12 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+// 读取obj文件要用的
+#include <vector>
+#include <fstream>
+#include <sstream>
+#include <string>
+
 using namespace std;
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
@@ -24,6 +30,9 @@ unsigned int loadCubemap(vector<std::string> faces);
 
 void renderQuad();
 void renderCube();
+// 函数声明
+void renderDiamond();
+
 
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
@@ -147,6 +156,45 @@ int main()
 			-0.5f, 0.5f, 0.5f, 0.0f, 0.0f		// bottom-left
 	};
 
+	// 一个钻石形状💎
+	float diamondVertices[] = {
+    // Bottom pyramid
+    // 顶点位置             纹理坐标
+    0.0f, -0.5f, 0.0f,     0.5f, 1.0f, // Top
+    -0.5f, -0.5f, 0.5f,    0.0f, 0.0f, // Bottom-left
+    0.5f, -0.5f, 0.5f,    1.0f, 0.0f, // Bottom-right
+
+    0.0f, -0.5f, 0.0f,     0.5f, 1.0f, // Top
+    0.5f, -0.5f, 0.5f,   1.0f, 0.0f, // Bottom-right
+    0.5f, -0.5f, -0.5f,    1.0f, 1.0f, // Bottom-back
+
+    0.0f, -0.5f, 0.0f,     0.5f, 1.0f, // Top
+    0.5f, -0.5f, -0.5f,   1.0f, 0.0f, // Bottom-back
+    -0.5f, -0.5f, -0.5f,   0.0f, 0.0f, // Bottom-left
+
+    0.0f, -0.5f, 0.0f,     0.5f, 1.0f, // Top
+    -0.5f, -0.5f, -0.5f,   0.0f, 0.0f, // Bottom-left
+    -0.5f, -0.5f, 0.5f,     0.0f, 1.0f, // Bottom-front
+
+    // Top pyramid
+    0.0f, 0.5f, 0.0f,      0.5f, 1.0f,  // Top
+    -0.5f, 0.5f, 0.5f,   0.0f, 0.0f,  // Bottom-left
+    0.5f, 0.5f, 0.5f,      1.0f, 0.0f,  // Bottom-right
+
+    0.0f, 0.5f, 0.0f,     0.5f, 1.0f,  // Top
+    0.5f, 0.5f, 0.5f,      1.0f, 0.0f,  // Bottom-right
+    0.5f, 0.5f, -0.5f,     1.0f, 1.0f,  // Bottom-back
+
+    0.0f, 0.5f, 0.0f,      0.5f, 1.0f,  // Top
+    0.5f, 0.5f, -0.5f,     1.0f, 0.0f,  // Bottom-back
+    -0.5f, 0.5f, -0.5f,    0.0f, 0.0f,  // Bottom-left
+
+    0.0f, 0.5f, 0.0f,      0.5f, 1.0f,  // Top
+    -0.5f, 0.5f, -0.5f,    0.0f, 0.0f,  // Bottom-left
+    -0.5f, 0.5f, 0.5f,     0.0f, 1.0f   // Bottom-front
+};
+
+
 	float skyboxVertices[] = {
 			// positions
 			-1.0f, 1.0f, -1.0f,
@@ -205,6 +253,21 @@ int main()
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
 	glBindVertexArray(0);
 
+	//diamond VBO AND VAO
+	unsigned int diamondVAO, diamondVBO;
+	glGenVertexArrays(1, &diamondVAO);
+	glGenBuffers(1, &diamondVBO);
+	glBindVertexArray(diamondVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, diamondVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(diamondVertices), &diamondVertices, GL_STATIC_DRAW);
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
+
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
+	glBindVertexArray(0);
+
 	// skyboxVBO quad VAO
 	unsigned int skyboxVAO, skyboxVBO;
 	glGenVertexArrays(1, &skyboxVAO);
@@ -217,6 +280,8 @@ int main()
 
 	// 加载纹理
 	unsigned int cubeTexture = loadTexture("./static/texture/container.jpg", false);
+	//加载钻石形状的纹理
+	unsigned int diamondTexture = loadTexture("./static/texture/subskybox/6.jpg", false);
 	vector<std::string> faces
 		{
 			"./static/texture/skybox/right.jpg",
@@ -437,6 +502,14 @@ int main()
 		shader.setMat4("model", model);
 		renderCube();
 
+		// 创建一个正八面体
+		glBindTexture(GL_TEXTURE_2D, diamondTexture);
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(4.0f, 0.0f, 0.0));
+		model = glm::scale(model, glm::vec3(0.5f));
+		shader.setMat4("model", model);
+		renderDiamond();
+
 		// 最后将所有光源显示为明亮的立方体
 		shaderLight.use();
 		shaderLight.setMat4("projection", projection);
@@ -576,6 +649,245 @@ void renderCube()
 	glDrawArrays(GL_TRIANGLES, 0, 36);
 	glBindVertexArray(0);
 }
+unsigned int diamondVAO = 0;
+unsigned int diamondVBO = 0;
+unsigned int diamondEBO = 0;
+// 渲染钻石形状💎
+// void renderDiamond()
+// {
+//     // Initialize (if necessary)
+//     if (diamondVAO == 0)
+//     {
+//         float octahedronVertices[] = {
+//             // Front face
+//             -0.5f, 0.0f, 0.5f,   0.0f, 1.0f, 0.0f,   0.25f, 0.5f,
+//             0.5f, 0.0f, 0.5f,    0.0f, 1.0f, 0.0f,   0.5f,  0.5f,
+//             0.0f, 0.5f, 0.0f,    0.0f, 1.0f, 0.0f,   0.375f, 1.0f,
+//             // Right face
+//             0.5f, 0.0f, 0.5f,    1.0f, 0.0f, 0.0f,   0.5f,  0.5f,
+//             0.5f, 0.0f, -0.5f,   1.0f, 0.0f, 0.0f,   0.75f, 0.5f,
+//             0.0f, 0.5f, 0.0f,    1.0f, 0.0f, 0.0f,   0.625f, 1.0f,
+//             // Back face
+//             0.5f, 0.0f, -0.5f,   0.0f, 0.0f, -1.0f,  0.75f, 0.5f,
+//             -0.5f, 0.0f, -0.5f,  0.0f, 0.0f, -1.0f,  1.0f,  0.5f,
+//             0.0f, 0.5f, 0.0f,    0.0f, 0.0f, -1.0f,  0.875f, 1.0f,
+//             // Left face
+//             -0.5f, 0.0f, -0.5f,  -1.0f, 0.0f, 0.0f,  0.0f,  0.5f,
+//             -0.5f, 0.0f, 0.5f,   -1.0f, 0.0f, 0.0f,  0.25f, 0.5f,
+//             0.0f, 0.5f, 0.0f,    -1.0f, 0.0f, 0.0f,  0.125f, 1.0f,
+
+// 			// Front face
+//            -0.5f, 0.0f, 0.5f,    0.0f, -1.0f, 0.0f,   0.25f, 0.5f,  // Bottom left corner
+//            0.5f, 0.0f, 0.5f,     0.0f, -1.0f, 0.0f,   0.5f,  0.5f,  // Bottom right corner
+//            0.0f, -0.5f, 0.0f,    0.0f, -1.0f, 0.0f,   0.375f, 0.0f, // Bottom point
+
+//            // Right face
+//     		0.5f, 0.0f, 0.5f,     -1.0f, 0.0f, 0.0f,   0.5f,  0.5f,  // Bottom right corner
+//     		0.5f, 0.0f, -0.5f,    -1.0f, 0.0f, 0.0f,   0.75f, 0.5f,  // Bottom left corner
+//     		0.0f, -0.5f, 0.0f,    -1.0f, 0.0f, 0.0f,   0.625f, 0.0f, // Bottom point
+
+//    		 // Back face
+//    			 0.5f, 0.0f, -0.5f,    0.0f, -1.0f, 0.0f,   0.75f, 0.5f,  // Bottom left corner
+//     		-0.5f, 0.0f, -0.5f,   0.0f, -1.0f, 0.0f,   1.0f,  0.5f,  // Bottom right corner
+//     		0.0f, -0.5f, 0.0f,    0.0f, -1.0f, 0.0f,   0.875f, 0.0f, // Bottom point
+
+//     		// Left face
+//    			 -0.5f, 0.0f, -0.5f,   1.0f, 0.0f, 0.0f,    0.0f,  0.5f,  // Bottom left corner
+//     		-0.5f, 0.0f, 0.5f,    1.0f, 0.0f, 0.0f,    0.25f, 0.5f,  // Bottom right corner
+//     		0.0f, -0.5f, 0.0f,    1.0f, 0.0f, 0.0f,    0.125f, 0.0f, // Bottom point
+//         };
+
+//         glGenVertexArrays(1, &diamondVAO);
+//         glGenBuffers(1, &diamondVBO);
+//         // Fill buffer
+//         glBindBuffer(GL_ARRAY_BUFFER, diamondVBO);
+//         glBufferData(GL_ARRAY_BUFFER, sizeof(octahedronVertices), octahedronVertices, GL_STATIC_DRAW);
+//         // Link vertex attributes
+//         glBindVertexArray(diamondVAO);
+//         glEnableVertexAttribArray(0);
+//         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)0); // Position
+//         glEnableVertexAttribArray(1);
+//         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(3 * sizeof(float))); // Normal
+//         glEnableVertexAttribArray(2);
+//         glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(6 * sizeof(float))); // Texture coordinates
+//         glBindBuffer(GL_ARRAY_BUFFER, 0);
+//         glBindVertexArray(0);
+//     }
+//     // Render Octahedron
+//     glBindVertexArray(diamondVAO);
+//     glDrawArrays(GL_TRIANGLES, 0, 24); // 6 faces, 3 vertices per face
+//     glBindVertexArray(0);
+// }
+
+void renderDiamond()
+{
+    // Initialize (if necessary)
+    if (diamondVAO == 0)
+    {
+        // Define vertices with shared positions
+        float octahedronVertices[] = {
+            // Positions            // Normals            // Texture coords
+            // Front face
+            -0.5f, 0.0f, 0.5f,     0.0f, 1.0f, 0.0f,    0.0f, 0.0f,  // 0
+            0.5f, 0.0f, 0.5f,      0.0f, 1.0f, 0.0f,    1.0f, 0.0f,  // 1
+            0.0f, 0.5f, 0.0f,      0.0f, 1.0f, 0.0f,    0.5f, 1.0f,  // 2
+
+            // Right face
+            0.5f, 0.0f, 0.5f,      1.0f, 0.0f, 0.0f,    0.0f, 0.0f,  // 3
+            0.5f, 0.0f, -0.5f,     1.0f, 0.0f, 0.0f,    1.0f, 0.0f,  // 4
+            0.0f, 0.5f, 0.0f,      1.0f, 0.0f, 0.0f,    0.5f, 1.0f,  // 5
+
+            // Back face
+            0.5f, 0.0f, -0.5f,     0.0f, 0.0f, -1.0f,   0.0f, 0.0f,  // 6
+            -0.5f, 0.0f, -0.5f,    0.0f, 0.0f, -1.0f,   1.0f, 0.0f,  // 7
+            0.0f, 0.5f, 0.0f,      0.0f, 0.0f, -1.0f,   0.5f, 1.0f,  // 8
+
+            // Left face
+            -0.5f, 0.0f, -0.5f,    -1.0f, 0.0f, 0.0f,   0.0f, 0.0f,  // 9
+            -0.5f, 0.0f, 0.5f,     -1.0f, 0.0f, 0.0f,   1.0f, 0.0f,  // 10
+            0.0f, 0.5f, 0.0f,      -1.0f, 0.0f, 0.0f,   0.5f, 1.0f,  // 11
+
+            // Bottom face
+            -0.5f, 0.0f, 0.5f,     0.0f, -1.0f, 0.0f,   0.0f, 0.0f,  // 12
+            0.5f, 0.0f, 0.5f,      0.0f, -1.0f, 0.0f,   1.0f, 0.0f,  // 13
+            0.0f, -0.5f, 0.0f,     0.0f, -1.0f, 0.0f,   0.5f, 1.0f,  // 14
+
+            // Right face
+            0.5f, 0.0f, 0.5f,      -1.0f, 0.0f, 0.0f,   0.0f, 0.0f,  // 15
+            0.5f, 0.0f, -0.5f,     -1.0f, 0.0f, 0.0f,   1.0f, 0.0f,  // 16
+            0.0f, -0.5f, 0.0f,     -1.0f, 0.0f, 0.0f,   0.5f, 1.0f,  // 17
+
+            // Back face
+            0.5f, 0.0f, -0.5f,     0.0f, -1.0f, 0.0f,   0.0f, 0.0f,  // 18
+            -0.5f, 0.0f, -0.5f,    0.0f, -1.0f, 0.0f,   1.0f, 0.0f,  // 19
+            0.0f, -0.5f, 0.0f,     0.0f, -1.0f, 0.0f,   0.5f, 1.0f,  // 20
+
+            // Left face
+            -0.5f, 0.0f, -0.5f,    1.0f, 0.0f, 0.0f,    0.0f, 0.0f,  // 21
+            -0.5f, 0.0f, 0.5f,     1.0f, 0.0f, 0.0f,    1.0f, 0.0f,  // 22
+            0.0f, -0.5f, 0.0f,     1.0f, 0.0f, 0.0f,    0.5f, 1.0f   // 23
+        };
+
+        unsigned int indices[] = {
+            0, 1, 2,    // Front face
+            3, 4, 5,    // Right face
+            6, 7, 8,    // Back face
+            9, 10, 11,  // Left face
+            12, 13, 14, // Bottom face
+            15, 16, 17, // Right face
+            18, 19, 20, // Back face
+            21, 22, 23  // Left face
+        };
+
+        // Generate buffers
+        glGenVertexArrays(1, &diamondVAO);
+        glGenBuffers(1, &diamondVBO);
+        glGenBuffers(1, &diamondEBO);
+
+        // Bind VAO
+        glBindVertexArray(diamondVAO);
+
+        // Bind and fill vertex buffer
+        glBindBuffer(GL_ARRAY_BUFFER, diamondVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(octahedronVertices), octahedronVertices, GL_STATIC_DRAW);
+
+        // Bind and fill element buffer
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, diamondEBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+        // Set vertex attribute pointers
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0); // Position
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float))); // Normal
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float))); // Texture coords
+        glEnableVertexAttribArray(2);
+
+        // Unbind VAO
+        glBindVertexArray(0);
+    }
+
+    // Render Octahedron
+    glBindVertexArray(diamondVAO);
+    glDrawElements(GL_TRIANGLES, 24, GL_UNSIGNED_INT, 0); // 8 faces, 3 vertices per face
+    glBindVertexArray(0);
+}
+unsigned int starVAO = 0;
+unsigned int starVBO = 0;
+unsigned int starEBO = 0;
+void renderStar()
+{
+    // Initialize (if necessary)
+    if (starVAO == 0)
+    {
+        // Define vertices for star
+        float starVertices[] = {
+            // Positions             // Normals            // Texture coords
+            // Bottom pyramid
+            0.0f, -0.5f, 0.0f,       0.0f, -1.0f, 0.0f,   0.5f, 0.0f, // 0
+            -0.45f, -0.3f, 0.0f,     0.0f, -1.0f, 0.0f,   0.0f, 0.5f, // 1
+            0.45f, -0.3f, 0.0f,      0.0f, -1.0f, 0.0f,   1.0f, 0.5f, // 2
+            -0.3f, 0.45f, 0.0f,      0.0f, -1.0f, 0.0f,   0.25f, 1.0f, // 3
+            0.3f, 0.45f, 0.0f,       0.0f, -1.0f, 0.0f,   0.75f, 1.0f, // 4
+            // Top pyramid
+            0.0f, 0.5f, 0.25f,       0.0f, 1.0f, 0.0f,    0.5f, 0.0f, // 5
+            -0.45f, 0.3f, 0.25f,     0.0f, 1.0f, 0.0f,    0.0f, 0.5f, // 6
+            0.45f, 0.3f, 0.25f,      0.0f, 1.0f, 0.0f,    1.0f, 0.5f, // 7
+            -0.3f, -0.45f, 0.25f,    0.0f, 1.0f, 0.0f,    0.25f, 1.0f, // 8
+            0.3f, -0.45f, 0.25f,     0.0f, 1.0f, 0.0f,    0.75f, 1.0f, // 9
+        };
+
+        unsigned int starIndices[] = {
+            // Bottom pyramid
+            0, 1, 2,    // Triangle 1
+            0, 2, 3,    // Triangle 2
+            0, 3, 4,    // Triangle 3
+            // Top pyramid
+            5, 6, 7,    // Triangle 4
+            5, 8, 9,    // Triangle 5
+            // Connecting sides
+            1, 6, 2,    // Triangle 6
+            2, 7, 3,    // Triangle 7
+            3, 8, 4,    // Triangle 8
+            4, 9, 0,    // Triangle 9
+            0, 5, 1     // Triangle 10
+        };
+
+        // Generate buffers
+        glGenVertexArrays(1, &starVAO);
+        glGenBuffers(1, &starVBO);
+        glGenBuffers(1, &starEBO);
+
+        // Bind VAO
+        glBindVertexArray(starVAO);
+
+        // Bind and fill vertex buffer
+        glBindBuffer(GL_ARRAY_BUFFER, starVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(starVertices), starVertices, GL_STATIC_DRAW);
+
+        // Bind and fill element buffer
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, starEBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(starIndices), starIndices, GL_STATIC_DRAW);
+
+        // Set vertex attribute pointers
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0); // Position
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float))); // Normal
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float))); // Texture coords
+        glEnableVertexAttribArray(2);
+
+        // Unbind VAO
+        glBindVertexArray(0);
+    }
+
+    // Render Star
+    glBindVertexArray(starVAO);
+    glDrawElements(GL_TRIANGLES, 30, GL_UNSIGNED_INT, 0); // 10 triangles, 3 vertices per triangle
+    glBindVertexArray(0);
+}
+
+
 
 // renderQuad() renders a 1x1 XY quad in NDC
 // -----------------------------------------

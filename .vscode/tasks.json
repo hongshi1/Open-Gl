@@ -12,7 +12,7 @@
                 "command": "powershell",
                 "args": [
                     "-c",
-                    "make dir=44_ssao", // 调式之前设置目录
+                    "make dir=src/bloom", // 调式之前设置目录
                 ]
             },
             "linux": {
