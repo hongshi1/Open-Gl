@@ -7,7 +7,7 @@
 CXX = g++
 
 # define any compile-time flags
-CXXFLAGS	:= -std=c++17 -Wall -Wextra -g
+CXXFLAGS	:= -std=c++17 -Wall -Wextra -g -Og
 
 # define library paths in addition to /usr/lib
 #   if I wanted to include libraries not in /usr/lib I'd specify
@@ -19,17 +19,18 @@ OUTPUT	:= output
 
 # define source directory 运行时修改此处路径
 SRC		:= src/$(dir) #// 传递 var 变量定义执行文件目录
-
+IMPL := src src/bloom/impl
 # define include directory
-INCLUDE	:= include
-
+INCLUDE	:= include src/bloom/headers
+# Adjusted source directories
+SOURCEDIRS := $(SRC) $(IMPL)
 # define lib directory
 LIB		:= lib
 LIBRARIES	:= -lglad -lglfw3dll -llibassimp
 
 ifeq ($(OS),Windows_NT)
 MAIN	:= main.exe
-SOURCEDIRS	:= $(SRC)
+SOURCEDIRS	:= $(SRC) $(IMPL)
 INCLUDEDIRS	:= $(INCLUDE)
 LIBDIRS		:= $(LIB)
 FIXPATH = $(subst /,/,$1)
@@ -37,7 +38,7 @@ RM			:= del /q a/f
 MD	:= mkdir
 else
 MAIN	:= main
-SOURCEDIRS	:= $(shell find $(SRC) -type d)
+SOURCEDIRS	:= $(shell find $(SRC) $(IMPL) -type d)
 INCLUDEDIRS	:= $(shell find $(INCLUDE) -type d)
 LIBDIRS		:= $(shell find $(LIB) -type d)
 FIXPATH = $1
@@ -91,3 +92,5 @@ clean:
 run: all
 	./$(OUTPUTMAIN)
 	@echo Executing 'run: all' complete!
+debug: $(OUTPUTMAIN)
+	gdb ./$(OUTPUTMAIN)
