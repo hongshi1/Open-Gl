@@ -11,12 +11,12 @@ uniform float time;
 
 void main()
 {
-    // 增加波动的复杂性和速度
-    float wave = sin(time + aPos.x) * 0.3;  // 主波动
-    float smallWave = sin(time * 2.0 + aPos.x * 2.0) * 0.1; // 快速小波动增加细节
+    // 更复杂的波动模式
+    float wave = sin(time * 0.5 + aPos.x * 3.14) * 0.7; // 长波
+    float smallWave = sin(time * 3.0 + aPos.x * 6.28) * 0.5; // 短快波
 
     vec3 pos = aPos;
-    pos.y += wave + smallWave; // 将波动应用到顶点的y坐标
+    pos.y += (pos.x > 0 ? wave : -wave) + smallWave; // 根据x坐标的正负决定波动方向
 
     TexCoords = aTexCoords;
     gl_Position = projection * view * model * vec4(pos, 1.0);

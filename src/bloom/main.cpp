@@ -257,7 +257,7 @@ int main()
 
 	// 加载贴图
 	// --------
-	unsigned int woodMap = loadTexture("./static/images/magic_carpent.jpg", false);
+	unsigned int woodMap = loadTexture("./static/images/b.jpg", false);
 	unsigned int containerMap = loadTexture("./static/texture/container2.png", true);
 
 	// 配置浮点帧缓冲区
@@ -1000,7 +1000,7 @@ void renderCarpet(Shader& magicCarpetShader, GLuint& woodMap, glm::mat4 projecti
 
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f)); // 根据指定位置调整
-    model = glm::scale(model, glm::vec3(12.5f, 0.5f, 12.5f));    // 确保魔毯尺寸正确
+    model = glm::scale(model, glm::vec3(7.0f, 0.5f, 4.0f));    // 确保魔毯尺寸正确
     magicCarpetShader.setMat4("model", model);
 
     glActiveTexture(GL_TEXTURE0);
