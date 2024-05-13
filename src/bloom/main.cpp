@@ -13,6 +13,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "ImportedModel.h"
 using namespace std;
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
@@ -24,11 +25,15 @@ unsigned int loadCubemap(vector<std::string> faces);
 
 void renderQuad();
 void renderCube();
+void setupVertices();
 
-const unsigned int SCR_WIDTH = 800;
+	const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
 Camera camera(glm::vec3(0.0f, 0.0f, 5.0f));
+
+//初始化obj
+ImportedModel hyperCar("./static/model/hyperCar/lamborghini-aventador-pbribl.obj");
 
 float deltaTime = 0.0f; // 当前帧与上一帧之间的时间差
 float lastTime = 0.0f;	// 上一帧的时间
@@ -457,6 +462,9 @@ int main()
 		model = glm::scale(model, glm::vec3(0.5f));
 		shader.setMat4("model", model);
 		renderCube();
+
+		//hyperCar
+		setupVertices();
 
 		// 最后将所有光源显示为明亮的立方体
 		shaderLight.use();
@@ -894,5 +902,48 @@ unsigned int loadCubemap(vector<std::string> faces)
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
 	return textureID;
+}
+
+static const int numVAOs = 1;
+static const int numVBOs = 3;
+GLuint vao[numVAOs] = {0};
+GLuint vbo[numVBOs] = {0};
+	// 加载模型
+void setupVertices(void)
+{
+	vector<glm::vec3> vert = hyperCar.getVertices();
+	vector<glm::vec2> text = hyperCar.getTextureCoords();
+	vector<glm::vec3> norm = hyperCar.getNormals();
+
+	vector<float> pValues;
+	vector<float> tValues;
+	vector<float> nValues;
+
+	for (int i = 0; i < hyperCar.getNumVertices(); i++)
+	{
+		pValues.push_back(vert[i].x);
+		pValues.push_back(vert[i].y);
+		pValues.push_back(vert[i].z);
+
+		tValues.push_back(text[i].s);
+		tValues.push_back(text[i].t);
+
+		nValues.push_back(norm[i].x);
+		nValues.push_back(norm[i].y);
+		nValues.push_back(norm[i].z);
+	}
+
+	glGenVertexArrays(numVAOs, vao);
+	glBindVertexArray(vao[0]);
+
+	glGenBuffers(numVBOs, vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+	glBufferData(GL_ARRAY_BUFFER, pValues.size() * sizeof(float), &(pValues[0]), GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+	glBufferData(GL_ARRAY_BUFFER, tValues.size() * sizeof(float), &(tValues[0]), GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
+	glBufferData(GL_ARRAY_BUFFER, nValues.size() * sizeof(float), &(nValues[0]), GL_STATIC_DRAW);
 }
 
