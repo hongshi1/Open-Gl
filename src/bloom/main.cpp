@@ -42,6 +42,8 @@ bool bloomKeyPressed = false;
 bool bloom = true;
 float exposure = 1.0;
 
+void renderWater(Shader &waterShader, unsigned int normalTexture, unsigned int noiseTexture, unsigned int cubeMapTexture, float deltaTime, glm::vec3 lightPos, glm::vec3 viewPos) ;
+
 
 
 int main()
@@ -102,6 +104,8 @@ int main()
 	Shader shaderBlur("./src/bloom/shader/bloom_blur_vert.glsl", "./src/bloom/shader/bloom_blur_frag.glsl");
 	Shader shaderFinal("./src/bloom/shader/bloom_final_vert.glsl", "./src/bloom/shader/bloom_final_frag.glsl");
 	Shader skyboxShader("./src/bloom/shader/skybox_vert.glsl", "./src/bloom/shader/skybox_frag.glsl");
+	Shader waterShader("./src/bloom/shader/water_vert.glsl", "./src/bloom/shader/water_frag.glsl");
+
 
 	// 顶点数组
 	float cubeVertices[] = {
@@ -218,7 +222,13 @@ int main()
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
 
 	// 加载纹理
+	
+
 	unsigned int cubeTexture = loadTexture("./static/texture/container.jpg", false);
+	unsigned int waterTexture = loadTexture("./static/images/wave.bmp", false);
+	// 加载法线贴图
+	unsigned int normalTexture = loadTexture("./static/texture/TexturesCom_MuddySand2_2x2_2K_normal.png", false);
+	unsigned int noiseTexture = loadTexture("./static/texture/perlin.png", false);
 	vector<std::string> faces
 		{
 			"./static/texture/skybox/right.jpg",
@@ -378,6 +388,15 @@ int main()
 		glDepthFunc(GL_LESS);
 
 		// glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		// 导入光源位置和摄像机位置
+		glm::vec3 lightPos(1.2f, 2.0f, 1.0f); 
+		// glm::vec3 lightPos(1.2f, 2.0f, 1.0f); 
+	
+		renderWater(waterShader, normalTexture, noiseTexture, cubemapTexture, deltaTime, lightPos, camera.Position);
+		
+
+		
+
 
 
 		shader.use();
@@ -578,6 +597,63 @@ void renderCube()
 	glDrawArrays(GL_TRIANGLES, 0, 36);
 	glBindVertexArray(0);
 }
+
+unsigned int waterVAO = 0;
+unsigned int waterVBO = 0;
+void renderWater(Shader &waterShader, unsigned int normalTexture, unsigned int noiseTexture, unsigned int cubeMapTexture, float deltaTime, glm::vec3 lightPos, glm::vec3 viewPos) {
+    if (waterVAO == 0) {
+        float waterVertices[] = {
+            -10.0f, 0.0f, -10.0f,  0.0f, 0.0f,
+            10.0f, 0.0f, -10.0f,  1.0f, 0.0f,
+            -10.0f, 0.0f,  10.0f,  0.0f, 1.0f,
+            10.0f, 0.0f, -10.0f,  1.0f, 0.0f,
+            10.0f, 0.0f,  10.0f,  1.0f, 1.0f,
+            -10.0f, 0.0f,  10.0f,  0.0f, 1.0f
+        };
+
+        glGenVertexArrays(1, &waterVAO);
+        glGenBuffers(1, &waterVBO);
+        glBindVertexArray(waterVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, waterVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(waterVertices), waterVertices, GL_STATIC_DRAW);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    }
+
+    waterShader.use();
+    glm::mat4 model = glm::mat4(1.0f);
+    glm::mat4 view = camera.GetViewMatrix();
+    glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+    glm::mat4 normalMatrix = glm::transpose(glm::inverse(model));
+
+    waterShader.setMat4("ModelMatrix", model);
+    waterShader.setMat4("IT_ModelMatrix", normalMatrix);
+    waterShader.setMat4("ViewMatrix", view);
+    waterShader.setMat4("ProjectMatrix", projection);
+    waterShader.setVec3("cameraPos", camera.Position);
+    waterShader.setVec3("LightLocation", lightPos);
+    waterShader.setFloat("totalTime", glfwGetTime());
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, normalTexture);
+    waterShader.setInt("T_Water_N", 0);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMapTexture);
+    waterShader.setInt("cubeMap", 1);
+
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, noiseTexture);
+    waterShader.setInt("T_Perlin_Noise_M", 2);
+
+    glBindVertexArray(waterVAO);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindVertexArray(0);
+}
+
+
 
 // renderQuad() renders a 1x1 XY quad in NDC
 // -----------------------------------------
@@ -819,3 +895,4 @@ unsigned int loadCubemap(vector<std::string> faces)
 
 	return textureID;
 }
+
