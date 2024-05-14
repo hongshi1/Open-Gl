@@ -15,6 +15,14 @@
 
 #include "ImportedModel.h"
 #include "PLYHandler.h"
+// 球体
+#include "SphereRenderer.h"
+// 正八面体
+#include "DiamondRenderer.h"
+// 圆锥
+#include "ConeRenderer.h"
+// 平面花
+#include "FlowerRenderer.h"
 using namespace std;
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
@@ -27,13 +35,10 @@ unsigned int loadCubemap(vector<std::string> faces);
 void renderQuad();
 void renderCube();
 void setupVertices();
-//绘制五角星
-void renderStar();
-void renderDiamond();
-void renderSphere();
-void renderOpenBox();
-void renderPointCloudSphere();
-void renderPointCloud();
+//绘制形状
+void renderSphereByPointCloud();
+void renderBunnyByPointCloud();
+void renderFlowerByPointCloud(float);
 
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
@@ -42,10 +47,20 @@ Camera camera(glm::vec3(0.0f, 0.0f, 5.0f));
 
 //初始化obj
 ImportedModel hyperCar("./static/model/hyperCar/lamborghini-aventador-pbribl.obj");
-
+// 创建 SphereRenderer 对象
+SphereRenderer sphereRenderer;
+DiamondRenderer diamondRenderer;
+// 创建圆锥体渲染器
+ConeRenderer cone(36, 0.5f, 1.0f);
+// 创建圆锥体渲染器
+FlowerRenderer flower(36, 0.5f, 1.0f);
 
 float deltaTime = 0.0f; // 当前帧与上一帧之间的时间差
 float lastTime = 0.0f;	// 上一帧的时间
+
+// 在渲染循环中更新球体的旋转
+float angle = 0.0f; // 初始旋转角度
+float rotationSpeed = 50.0f; // 旋转速度
 
 float lastX = SCR_WIDTH / 2.0f; // 鼠标上一帧的位置
 float lastY = SCR_HEIGHT / 2.0f;
@@ -114,6 +129,8 @@ int main()
 	Shader shaderBlur("./src/bloom/shader/bloom_blur_vert.glsl", "./src/bloom/shader/bloom_blur_frag.glsl");
 	Shader shaderFinal("./src/bloom/shader/bloom_final_vert.glsl", "./src/bloom/shader/bloom_final_frag.glsl");
 	Shader skyboxShader("./src/bloom/shader/skybox_vert.glsl", "./src/bloom/shader/skybox_frag.glsl");
+	//针对点云的shader
+	Shader pointCloudShader("./src/bloom/shader/model_sphere_vert.glsl", "./src/bloom/shader/model_sphere_frag.glsl");
 
 	// 顶点数组
 	float cubeVertices[] = {
@@ -160,45 +177,6 @@ int main()
 			-0.5f, 0.5f, -0.5f, 0.0f, 1.0f, // top-left
 			-0.5f, 0.5f, 0.5f, 0.0f, 0.0f		// bottom-left
 	};
-
-	// 一个钻石形状💎
-	float diamondVertices[] = {
-    // Bottom pyramid
-    // 顶点位置             纹理坐标
-    0.0f, -0.5f, 0.0f,     0.5f, 1.0f, // Top
-    -0.5f, -0.5f, 0.5f,    0.0f, 0.0f, // Bottom-left
-    0.5f, -0.5f, 0.5f,    1.0f, 0.0f, // Bottom-right
-
-    0.0f, -0.5f, 0.0f,     0.5f, 1.0f, // Top
-    0.5f, -0.5f, 0.5f,   1.0f, 0.0f, // Bottom-right
-    0.5f, -0.5f, -0.5f,    1.0f, 1.0f, // Bottom-back
-
-    0.0f, -0.5f, 0.0f,     0.5f, 1.0f, // Top
-    0.5f, -0.5f, -0.5f,   1.0f, 0.0f, // Bottom-back
-    -0.5f, -0.5f, -0.5f,   0.0f, 0.0f, // Bottom-left
-
-    0.0f, -0.5f, 0.0f,     0.5f, 1.0f, // Top
-    -0.5f, -0.5f, -0.5f,   0.0f, 0.0f, // Bottom-left
-    -0.5f, -0.5f, 0.5f,     0.0f, 1.0f, // Bottom-front
-
-    // Top pyramid
-    0.0f, 0.5f, 0.0f,      0.5f, 1.0f,  // Top
-    -0.5f, 0.5f, 0.5f,   0.0f, 0.0f,  // Bottom-left
-    0.5f, 0.5f, 0.5f,      1.0f, 0.0f,  // Bottom-right
-
-    0.0f, 0.5f, 0.0f,     0.5f, 1.0f,  // Top
-    0.5f, 0.5f, 0.5f,      1.0f, 0.0f,  // Bottom-right
-    0.5f, 0.5f, -0.5f,     1.0f, 1.0f,  // Bottom-back
-
-    0.0f, 0.5f, 0.0f,      0.5f, 1.0f,  // Top
-    0.5f, 0.5f, -0.5f,     1.0f, 0.0f,  // Bottom-back
-    -0.5f, 0.5f, -0.5f,    0.0f, 0.0f,  // Bottom-left
-
-    0.0f, 0.5f, 0.0f,      0.5f, 1.0f,  // Top
-    -0.5f, 0.5f, -0.5f,    0.0f, 0.0f,  // Bottom-left
-    -0.5f, 0.5f, 0.5f,     0.0f, 1.0f   // Bottom-front
-};
-
 
 	float skyboxVertices[] = {
 			// positions
@@ -258,21 +236,6 @@ int main()
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
 	glBindVertexArray(0);
 
-	//diamond VBO AND VAO
-	unsigned int diamondVAO, diamondVBO;
-	glGenVertexArrays(1, &diamondVAO);
-	glGenBuffers(1, &diamondVBO);
-	glBindVertexArray(diamondVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, diamondVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(diamondVertices), &diamondVertices, GL_STATIC_DRAW);
-
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
-
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
-	glBindVertexArray(0);
-
 	// skyboxVBO quad VAO
 	unsigned int skyboxVAO, skyboxVBO;
 	glGenVertexArrays(1, &skyboxVAO);
@@ -286,9 +249,11 @@ int main()
 	// 加载纹理
 	unsigned int cubeTexture = loadTexture("./static/texture/container.jpg", false);
 	//加载钻石形状的纹理
-	unsigned int diamondTexture = loadTexture("./static/texture/subskybox/eight.png", false);
+	// unsigned int diamondTexture = loadTexture("./static/texture/subskybox/eight.png", false);
 	//加载球体的纹理
-	unsigned int sphereTexture = loadTexture("./static/texture/subskybox/sphere7.jpg", false);
+	unsigned int sphereTexture = loadTexture("./static/texture/subskybox/sphere8.jpg", false);
+	unsigned int diamondTexture = loadTexture("./static/texture/subskybox/sphere2.jpg", false);
+	
 	vector<std::string> faces
 		{
 			"./static/texture/skybox/right.jpg",
@@ -377,12 +342,16 @@ int main()
 	lightPositions.push_back(glm::vec3(-4.0f, 0.5f, -3.0f));
 	lightPositions.push_back(glm::vec3(3.0f, 0.5f, 1.0f));
 	lightPositions.push_back(glm::vec3(-.8f, 2.4f, -1.0f));
+	// 点云球的球心
+	lightPositions.push_back(glm::vec3(5.0f, 0.0f, 0.0));
 	// colors
 	vector<glm::vec3> lightColors;
 	lightColors.push_back(glm::vec3(5.0f, 5.0f, 5.0f));
 	lightColors.push_back(glm::vec3(10.0f, 0.0f, 0.0f));
 	lightColors.push_back(glm::vec3(0.0f, 0.0f, 15.0f));
 	lightColors.push_back(glm::vec3(0.0f, 5.0f, 0.0f));
+	// 白光
+	lightColors.push_back(glm::vec3(1.0f, 1.0f, 1.0f));
 
 	// shader 配置信息
 	// ---------------
@@ -471,80 +440,171 @@ int main()
 		renderCube();
 
 		// 创建多个立方体作为物体
-		glBindTexture(GL_TEXTURE_2D, containerMap);
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.0f, 1.0f, 0.0f));
-		model = glm::scale(model, glm::vec3(0.5f));
-		shader.setMat4("model", model);
-		renderCube();
+		// glBindTexture(GL_TEXTURE_2D, containerMap);
+		// model = glm::mat4(1.0f);
+		// model = glm::translate(model, glm::vec3(0.0f, 1.0f, 0.0f));
+		// model = glm::scale(model, glm::vec3(0.5f));
+		// shader.setMat4("model", model);
+		// renderCube();
 
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(2.0f, 0.0f, 1.0));
-		model = glm::scale(model, glm::vec3(0.5f));
-		shader.setMat4("model", model);
-		renderCube();
+		// model = glm::mat4(1.0f);
+		// model = glm::translate(model, glm::vec3(2.0f, 0.0f, 1.0));
+		// model = glm::scale(model, glm::vec3(0.5f));
+		// shader.setMat4("model", model);
+		// renderCube();
 
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-1.0f, -1.0f, 2.0));
-		model = glm::rotate(model, glm::radians(60.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
-		shader.setMat4("model", model);
-		renderCube();
+		// model = glm::mat4(1.0f);
+		// model = glm::translate(model, glm::vec3(-1.0f, -1.0f, 2.0));
+		// model = glm::rotate(model, glm::radians(60.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
+		// shader.setMat4("model", model);
+		// renderCube();
 
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.0f, 2.7f, 4.0));
-		model = glm::rotate(model, glm::radians(23.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
-		model = glm::scale(model, glm::vec3(1.25));
-		shader.setMat4("model", model);
-		renderCube();
+		// model = glm::mat4(1.0f);
+		// model = glm::translate(model, glm::vec3(0.0f, 2.7f, 4.0));
+		// model = glm::rotate(model, glm::radians(23.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
+		// model = glm::scale(model, glm::vec3(1.25));
+		// shader.setMat4("model", model);
+		// renderCube();
 
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-2.0f, 1.0f, -3.0));
-		model = glm::rotate(model, glm::radians(124.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
-		shader.setMat4("model", model);
-		renderCube();
+		// model = glm::mat4(1.0f);
+		// model = glm::translate(model, glm::vec3(-2.0f, 1.0f, -3.0));
+		// model = glm::rotate(model, glm::radians(124.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
+		// shader.setMat4("model", model);
+		// renderCube();
 
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-3.0f, 0.0f, 0.0));
-		model = glm::scale(model, glm::vec3(0.5f));
-		shader.setMat4("model", model);
-		renderCube();
+		// model = glm::mat4(1.0f);
+		// model = glm::translate(model, glm::vec3(-3.0f, 0.0f, 0.0));
+		// model = glm::scale(model, glm::vec3(0.5f));
+		// shader.setMat4("model", model);
+		// renderCube();
 
-		// 绘制钻石形状
+
+		// 设置透明度
+		float transparency = 0.8; // 设置透明度为50%		
+		// 使用着色器程序
+		pointCloudShader.use();
+		// 设置uniform变量
+		pointCloudShader.setVec3("lightPos", lightPositions[1]); // 设置光源位置
+		pointCloudShader.setVec3("viewPos", camera.Position); // 设置视点位置
+		pointCloudShader.setVec3("lightColor", lightColors[1]); // 设置光源颜色
+		pointCloudShader.setVec3("rimLightColor", glm::vec3(0.2, 0.6, 1.0)); // 设置泛光颜色
+		pointCloudShader.setFloat("rimIntensity", 0.7); // 设置泛光强度
+		pointCloudShader.setFloat("transparency", transparency); // 设置透明度
+		//绑定纹理
 		glBindTexture(GL_TEXTURE_2D, sphereTexture);
+		
+		// 设置纹理参数
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		pointCloudShader.setMat4("projection", projection);
+		pointCloudShader.setMat4("view", view);
+		
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(4.0f, 0.0f, 0.0));
-		model = glm::scale(model, glm::vec3(0.3f));
-		shader.setMat4("model", model);
-		renderPointCloud();
+		model = glm::scale(model, glm::vec3(1.0f));
+		pointCloudShader.setMat4("model", model);
+
+		// 启用混合功能
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+		// 渲染球体
+		//renderSphere();
+		// 渲染球体
+    	sphereRenderer.renderSphere();
 		
+		// 关闭混合功能
+		glDisable(GL_BLEND);
+
+		// 根据点云绘制球体		
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(5.0f, 0.0f, 0.0));
+		// 绕 y 轴旋转
+		model = glm::rotate(model, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f)); 
+		model = glm::scale(model, glm::vec3(1.0f));
+		pointCloudShader.setMat4("model", model);
+		//renderSphereByPointCloud();
+		// 绘制花朵点云
+		renderFlowerByPointCloud(0.5f);
+			
+		// 更新旋转角度
+    	angle += rotationSpeed * deltaTime; // deltaTime是上一帧到当前帧的时间间隔
 
 		// 绘制星星形状
-	// float scale = 0.3f; // 缩放因子
-    // float spacing = 0.5f; // 间隔
+	float scale = 0.1f; // 缩放因子
+    float spacing = 0.3f; // 间隔
 
-    // glm::vec3 cubeVertices[] = {
-    //     glm::vec3(-spacing, -spacing, -spacing),
-    //     glm::vec3(spacing, -spacing, -spacing),
-    //     glm::vec3(-spacing, spacing, -spacing),
-    //     glm::vec3(spacing, spacing, -spacing),
-    //     glm::vec3(-spacing, -spacing, spacing),
-    //     glm::vec3(spacing, -spacing, spacing),
-    //     glm::vec3(-spacing, spacing, spacing),
-    //     glm::vec3(spacing, spacing, spacing)
-    // };
+    glm::vec3 cubeVertices[] = {
+        glm::vec3(-spacing, -spacing, -spacing),
+        glm::vec3(spacing, -spacing, -spacing),
+        glm::vec3(-spacing, spacing, -spacing),
+        glm::vec3(spacing, spacing, -spacing),
+        glm::vec3(-spacing, -spacing, spacing),
+        glm::vec3(spacing, -spacing, spacing),
+        glm::vec3(-spacing, spacing, spacing),
+        glm::vec3(spacing, spacing, spacing)
+    };
+	// 定义大立方体的顶点数组
+	glm::vec3 largeCubeVertices[] = {
+    glm::vec3(-spacing * 1.1, -spacing * 1.1, -spacing * 1.1),
+    glm::vec3(spacing * 1.1, -spacing * 1.1, -spacing * 1.1),
+    glm::vec3(-spacing * 1.1, spacing * 1.1, -spacing * 1.1),
+    glm::vec3(spacing * 1.1, spacing * 1.1, -spacing * 1.1),
+    glm::vec3(-spacing * 1.1, -spacing * 1.1, spacing * 1.1),
+    glm::vec3(spacing * 1.1, -spacing * 1.1, spacing * 1.1),
+    glm::vec3(-spacing * 1.1, spacing * 1.1, spacing * 1.1),
+    glm::vec3(spacing * 1.1, spacing * 1.1, spacing * 1.1),
 
-    // 绘制八个正八面体，每个在立方体的一个顶点上
-    // for (int i = 0; i < 8; ++i) {
-    //     glm::mat4 model = glm::mat4(1.0f);
-    //     glm::vec3 position = cubeVertices[i] * spacing;
+	// 面心
+    glm::vec3(0.0f, 0.0f, -spacing * 1.1), // 前面中心
+    glm::vec3(0.0f, 0.0f, spacing * 1.1),  // 后面中心
+    glm::vec3(-spacing * 1.1, 0.0f, 0.0f),  // 左侧中心
+    glm::vec3(spacing * 1.1, 0.0f, 0.0f),   // 右侧中心
+    glm::vec3(0.0f, -spacing * 1.1, 0.0f),  // 下面中心
+    glm::vec3(0.0f, spacing * 1.1, 0.0f),   // 上面中心
+    // 棱心
+    glm::vec3(-spacing * 1.1, 0.0f, -spacing * 1.1), // 前左棱心
+    glm::vec3(-spacing * 1.1, 0.0f, spacing * 1.1),  // 后左棱心
+    glm::vec3(spacing * 1.1, 0.0f, -spacing * 1.1),  // 前右棱心
+    glm::vec3(spacing * 1.1, 0.0f, spacing * 1.1),   // 后右棱心
+    glm::vec3(0.0f, -spacing * 1.1, -spacing * 1.1), // 前下棱心
+    glm::vec3(0.0f, -spacing * 1.1, spacing * 1.1),  // 后下棱心
+    glm::vec3(0.0f, spacing * 1.1, -spacing * 1.1),  // 前上棱心
+    glm::vec3(0.0f, spacing * 1.1, spacing * 1.1),   // 后上棱心
+    glm::vec3(-spacing * 1.1, -spacing * 1.1, 0.0f), // 左下棱心
+    glm::vec3(-spacing * 1.1, spacing * 1.1, 0.0f),  // 左上棱心
+    glm::vec3(spacing * 1.1, -spacing * 1.1, 0.0f),  // 右下棱心
+    glm::vec3(spacing * 1.1, spacing * 1.1, 0.0f)    // 右上棱心
+};
+	//绑定纹理
+	glBindTexture(GL_TEXTURE_2D, diamondTexture);
+    // 绘制内部八个正八面体
+for (int i = 0; i < 8; ++i) {
 
-    //     model = glm::translate(model, position); // 设置位置
-    //     model = glm::scale(model, glm::vec3(scale)); // 设置缩放
-    //     model = glm::rotate(model, glm::radians(45.0f) * i, glm::vec3(0.0f, 0.0f, 1.0f)); // 旋转到相应的顶点
+    glm::mat4 model = glm::mat4(1.0f);
+    glm::vec3 position = cubeVertices[i] * spacing;
 
-    //     shader.setMat4("model", model); // 设置模型矩阵
-    //     renderSphere(); // 绘制正八面体
-    // }
+    model = glm::translate(model, position); // 设置位置
+    model = glm::scale(model, glm::vec3(scale)); // 设置缩放
+	model = glm::rotate(model, glm::radians(angle), glm::vec3(0.0f, 0.0f, 1.0f)); 
+    pointCloudShader.setMat4("model", model); // 设置模型矩阵
+    diamondRenderer.renderDiamond();// 绘制正八面体
+
+    // 绘制外部大立方体
+    for (int j = 0; j < 26; ++j) {
+        glm::mat4 outerModel = glm::mat4(1.0f);
+        glm::vec3 outerPosition = largeCubeVertices[j];
+
+        outerModel = glm::translate(outerModel, outerPosition); // 设置位置
+        outerModel = glm::scale(outerModel, glm::vec3(scale * 2)); // 设置缩放
+		outerModel = glm::rotate(outerModel, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f)); 
+
+        pointCloudShader.setMat4("model", outerModel); // 设置模型矩阵
+        diamondRenderer.renderDiamond();// 绘制正八面体 
+    }
+}
 
 		//hyperCar
 		setupVertices();
@@ -554,13 +614,25 @@ int main()
 		shaderLight.setMat4("projection", projection);
 		shaderLight.setMat4("view", view);
 		for (unsigned int i = 0; i < lightPositions.size(); i++)
-		{
-			model = glm::mat4(1.0f);
-			model = glm::translate(model, glm::vec3(lightPositions[i]));
-			model = glm::scale(model, glm::vec3(0.25f));
-			shaderLight.setMat4("model", model);
-			shaderLight.setVec3("lightColor", lightColors[i]);
-			renderCube();
+		{	
+			if(i == lightPositions.size()-1){
+				model = glm::mat4(1.0f);
+    			model = glm::translate(model, glm::vec3(lightPositions[i]));
+    			model = glm::scale(model, glm::vec3(0.25f));
+    			shaderLight.setMat4("model", model);
+    			shaderLight.setVec3("lightColor", lightColors[i]); // 设置光源颜色
+    			//sphereRenderer.renderSphere();
+				// 绘制圆锥体
+        		flower.render();
+			}else{
+				model = glm::mat4(1.0f);
+    			model = glm::translate(model, glm::vec3(lightPositions[i]));
+    			model = glm::scale(model, glm::vec3(0.25f));
+    			shaderLight.setMat4("model", model);
+    			shaderLight.setVec3("lightColor", lightColors[i]); // 设置光源颜色
+    			renderCube();
+			}	
+			
 		}
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -689,307 +761,103 @@ void renderCube()
 	glBindVertexArray(0);
 }
 
-
-// unsigned int diamondVAO = 0;
-// unsigned int diamondVBO = 0;
-// unsigned int diamondEBO = 0;
-// 渲染钻石形状💎
-// void renderDiamond()
-// {
-//     // Initialize (if necessary)
-//     if (diamondVAO == 0)
-//     {
-//         float octahedronVertices[] = {
-//             // Front face
-//             -0.5f, 0.0f, 0.5f,   0.0f, 1.0f, 0.0f,   0.25f, 0.5f,
-//             0.5f, 0.0f, 0.5f,    0.0f, 1.0f, 0.0f,   0.5f,  0.5f,
-//             0.0f, 0.5f, 0.0f,    0.0f, 1.0f, 0.0f,   0.375f, 1.0f,
-//             // Right face
-//             0.5f, 0.0f, 0.5f,    1.0f, 0.0f, 0.0f,   0.5f,  0.5f,
-//             0.5f, 0.0f, -0.5f,   1.0f, 0.0f, 0.0f,   0.75f, 0.5f,
-//             0.0f, 0.5f, 0.0f,    1.0f, 0.0f, 0.0f,   0.625f, 1.0f,
-//             // Back face
-//             0.5f, 0.0f, -0.5f,   0.0f, 0.0f, -1.0f,  0.75f, 0.5f,
-//             -0.5f, 0.0f, -0.5f,  0.0f, 0.0f, -1.0f,  1.0f,  0.5f,
-//             0.0f, 0.5f, 0.0f,    0.0f, 0.0f, -1.0f,  0.875f, 1.0f,
-//             // Left face
-//             -0.5f, 0.0f, -0.5f,  -1.0f, 0.0f, 0.0f,  0.0f,  0.5f,
-//             -0.5f, 0.0f, 0.5f,   -1.0f, 0.0f, 0.0f,  0.25f, 0.5f,
-//             0.0f, 0.5f, 0.0f,    -1.0f, 0.0f, 0.0f,  0.125f, 1.0f,
-
-// 			// Front face
-//            -0.5f, 0.0f, 0.5f,    0.0f, -1.0f, 0.0f,   0.25f, 0.5f,  // Bottom left corner
-//            0.5f, 0.0f, 0.5f,     0.0f, -1.0f, 0.0f,   0.5f,  0.5f,  // Bottom right corner
-//            0.0f, -0.5f, 0.0f,    0.0f, -1.0f, 0.0f,   0.375f, 0.0f, // Bottom point
-
-//            // Right face
-//     		0.5f, 0.0f, 0.5f,     -1.0f, 0.0f, 0.0f,   0.5f,  0.5f,  // Bottom right corner
-//     		0.5f, 0.0f, -0.5f,    -1.0f, 0.0f, 0.0f,   0.75f, 0.5f,  // Bottom left corner
-//     		0.0f, -0.5f, 0.0f,    -1.0f, 0.0f, 0.0f,   0.625f, 0.0f, // Bottom point
-
-//    		 // Back face
-//    		0.5f, 0.0f, -0.5f,    0.0f, -1.0f, 0.0f,   0.75f, 0.5f,  // Bottom left corner
-//     		-0.5f, 0.0f, -0.5f,   0.0f, -1.0f, 0.0f,   1.0f,  0.5f,  // Bottom right corner
-//     		0.0f, -0.5f, 0.0f,    0.0f, -1.0f, 0.0f,   0.875f, 0.0f, // Bottom point
-
-//     		// Left face
-//    		-0.5f, 0.0f, -0.5f,   1.0f, 0.0f, 0.0f,    0.0f,  0.5f,  // Bottom left corner
-//     		-0.5f, 0.0f, 0.5f,    1.0f, 0.0f, 0.0f,    0.25f, 0.5f,  // Bottom right corner
-//     		0.0f, -0.5f, 0.0f,    1.0f, 0.0f, 0.0f,    0.125f, 0.0f, // Bottom point
-//         };
-
-//         glGenVertexArrays(1, &diamondVAO);
-//         glGenBuffers(1, &diamondVBO);
-//         // Fill buffer
-//         glBindBuffer(GL_ARRAY_BUFFER, diamondVBO);
-//         glBufferData(GL_ARRAY_BUFFER, sizeof(octahedronVertices), octahedronVertices, GL_STATIC_DRAW);
-//         // Link vertex attributes
-//         glBindVertexArray(diamondVAO);
-//         glEnableVertexAttribArray(0);
-//         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)0); // Position
-//         glEnableVertexAttribArray(1);
-//         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(3 * sizeof(float))); // Normal
-//         glEnableVertexAttribArray(2);
-//         glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(6 * sizeof(float))); // Texture coordinates
-//         glBindBuffer(GL_ARRAY_BUFFER, 0);
-//         glBindVertexArray(0);
-//     }
-//     // Render Octahedron
-//     glBindVertexArray(diamondVAO);
-//     glDrawArrays(GL_TRIANGLES, 0, 24); // 6 faces, 3 vertices per face
-//     glBindVertexArray(0);
-// }
-
-void renderDiamond()
-{
-	static bool initialized = false;
-    static unsigned int diamondVAO, diamondVBO, diamondEBO;
-    // Initialize (if necessary)
-    if (diamondVAO == 0)
-    {
-        // Define vertices with shared positions
-        float octahedronVertices[] = {
-            // Positions            // Normals            // Texture coords
-            // Front face
-            -0.5f, 0.0f, 0.5f,     0.0f, 1.0f, 0.0f,    0.0f, 0.0f,  // 0
-            0.5f, 0.0f, 0.5f,      0.0f, 1.0f, 0.0f,    1.0f, 0.0f,  // 1
-            0.0f, 0.5f, 0.0f,      0.0f, 1.0f, 0.0f,    0.5f, 1.0f,  // 2
-
-            // Right face
-            0.5f, 0.0f, 0.5f,      1.0f, 0.0f, 0.0f,    0.0f, 0.0f,  // 3
-            0.5f, 0.0f, -0.5f,     1.0f, 0.0f, 0.0f,    1.0f, 0.0f,  // 4
-            0.0f, 0.5f, 0.0f,      1.0f, 0.0f, 0.0f,    0.5f, 1.0f,  // 5
-
-            // Back face
-            0.5f, 0.0f, -0.5f,     0.0f, 0.0f, -1.0f,   0.0f, 0.0f,  // 6
-            -0.5f, 0.0f, -0.5f,    0.0f, 0.0f, -1.0f,   1.0f, 0.0f,  // 7
-            0.0f, 0.5f, 0.0f,      0.0f, 0.0f, -1.0f,   0.5f, 1.0f,  // 8
-
-            // Left face
-            -0.5f, 0.0f, -0.5f,    -1.0f, 0.0f, 0.0f,   0.0f, 0.0f,  // 9
-            -0.5f, 0.0f, 0.5f,     -1.0f, 0.0f, 0.0f,   1.0f, 0.0f,  // 10
-            0.0f, 0.5f, 0.0f,      -1.0f, 0.0f, 0.0f,   0.5f, 1.0f,  // 11
-
-            // Bottom face
-            -0.5f, 0.0f, 0.5f,     0.0f, -1.0f, 0.0f,   0.0f, 0.0f,  // 12
-            0.5f, 0.0f, 0.5f,      0.0f, -1.0f, 0.0f,   1.0f, 0.0f,  // 13
-            0.0f, -0.5f, 0.0f,     0.0f, -1.0f, 0.0f,   0.5f, 1.0f,  // 14
-
-            // Right face
-            0.5f, 0.0f, 0.5f,      -1.0f, 0.0f, 0.0f,   0.0f, 0.0f,  // 15
-            0.5f, 0.0f, -0.5f,     -1.0f, 0.0f, 0.0f,   1.0f, 0.0f,  // 16
-            0.0f, -0.5f, 0.0f,     -1.0f, 0.0f, 0.0f,   0.5f, 1.0f,  // 17
-
-            // Back face
-            0.5f, 0.0f, -0.5f,     0.0f, -1.0f, 0.0f,   0.0f, 0.0f,  // 18
-            -0.5f, 0.0f, -0.5f,    0.0f, -1.0f, 0.0f,   1.0f, 0.0f,  // 19
-            0.0f, -0.5f, 0.0f,     0.0f, -1.0f, 0.0f,   0.5f, 1.0f,  // 20
-
-            // Left face
-            -0.5f, 0.0f, -0.5f,    1.0f, 0.0f, 0.0f,    0.0f, 0.0f,  // 21
-            -0.5f, 0.0f, 0.5f,     1.0f, 0.0f, 0.0f,    1.0f, 0.0f,  // 22
-            0.0f, -0.5f, 0.0f,     1.0f, 0.0f, 0.0f,    0.5f, 1.0f   // 23
-        };
-
-        unsigned int indices[] = {
-            0, 1, 2,    // Front face
-            3, 4, 5,    // Right face
-            6, 7, 8,    // Back face
-            9, 10, 11,  // Left face
-            12, 13, 14, // Bottom face
-            15, 16, 17, // Right face
-            18, 19, 20, // Back face
-            21, 22, 23  // Left face
-        };
-
-        // Generate buffers
-        glGenVertexArrays(1, &diamondVAO);
-        glGenBuffers(1, &diamondVBO);
-        glGenBuffers(1, &diamondEBO);
-
-        // Bind VAO
-        glBindVertexArray(diamondVAO);
-
-        // Bind and fill vertex buffer
-        glBindBuffer(GL_ARRAY_BUFFER, diamondVBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(octahedronVertices), octahedronVertices, GL_STATIC_DRAW);
-
-        // Bind and fill element buffer
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, diamondEBO);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-        // Set vertex attribute pointers
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0); // Position
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float))); // Normal
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float))); // Texture coords
-        glEnableVertexAttribArray(2);
-
-        // Unbind VAO
-        glBindVertexArray(0);
-    }
-
-    // Render Octahedron
-    glBindVertexArray(diamondVAO);
-    glDrawElements(GL_TRIANGLES, 24, GL_UNSIGNED_INT, 0); // 8 faces, 3 vertices per face
-    glBindVertexArray(0);
-}
-void renderSphere()
+void renderFlowerByPointCloud(float openness)
 {
     static bool initialized = false;
-    static unsigned int sphereVAO, sphereVBO, sphereEBO;
-	const int sectors = 36;
-        const int stacks = 18;
-    // Initialize (if necessary)
+    static unsigned int lilyVAO, lilyVBO;
+    const int numPetals = 6; // 百合花瓣数量
+    const int pointsPerPetal = 50; // 每个花瓣的点数
+
     if (!initialized)
     {
-        
-        float sphereVertices[(sectors + 1) * (stacks + 1) * 8]; // 8 floats per vertex (3 positions + 3 normals + 2 texture coordinates)
-        unsigned int sphereIndices[sectors * stacks * 6];
-
-        float radius = 0.5f;
-        float sectorStep = 2 * glm::pi<float>() / sectors;
-        float stackStep = glm::pi<float>() / stacks;
-        int count = 0;
-
-        for (int i = 0; i <= stacks; ++i)
+        // 生成百合花点云
+        std::vector<glm::vec3> points;
+        for (int i = 0; i < numPetals; ++i)
         {
-            float stackAngle = glm::pi<float>() / 2 - i * stackStep;
-            float xy = radius * cosf(stackAngle);
-            float z = radius * sinf(stackAngle);
-
-            for (int j = 0; j <= sectors; ++j)
+            float angle = i * (2.0f * glm::pi<float>()) / numPetals;
+            for (int j = 0; j <= pointsPerPetal; ++j)
             {
-                float sectorAngle = j * sectorStep;
+                float phi = (static_cast<float>(j) / pointsPerPetal) * glm::pi<float>();
+                float r = 1.0f + openness * sin(2 * phi); // 开合效果，调整半径
+                float x = r * cos(angle) * sin(phi);
+                float y = r * sin(angle) * sin(phi);
+                float z = r * cos(phi);
 
-                float x = xy * cosf(sectorAngle);
-                float y = xy * sinf(sectorAngle);
+                // 将花瓣旋转使花心朝上
+                float theta = glm::pi<float>() / 2.0f;
+                float newX = x * cos(theta) - z * sin(theta);
+                float newZ = x * sin(theta) + z * cos(theta);
 
-                // Vertex positions
-                sphereVertices[count++] = x;
-                sphereVertices[count++] = y;
-                sphereVertices[count++] = z;
-
-                // Normals
-                sphereVertices[count++] = x / radius;
-                sphereVertices[count++] = y / radius;
-                sphereVertices[count++] = z / radius;
-
-                // Texture coordinates
-                sphereVertices[count++] = (float)j / sectors;
-                sphereVertices[count++] = (float)i / stacks;
+                points.push_back(glm::vec3(newX, y, newZ));
             }
         }
 
-        count = 0;
-        for (int i = 0; i < stacks; ++i)
-        {
-            for (int j = 0; j < sectors; ++j)
-            {
-                int first = (i * (sectors + 1)) + j;
-                int second = first + sectors + 1;
+        // 生成并绑定缓冲区对象
+        glGenVertexArrays(1, &lilyVAO);
+        glGenBuffers(1, &lilyVBO);
 
-                // Indices for two triangles
-                sphereIndices[count++] = first;
-                sphereIndices[count++] = second;
-                sphereIndices[count++] = first + 1;
+        // 设置点的大小
+        glPointSize(5.0f); // 调整点的大小
 
-                sphereIndices[count++] = second;
-                sphereIndices[count++] = second + 1;
-                sphereIndices[count++] = first + 1;
-            }
-        }
+        // 绑定顶点数组对象
+        glBindVertexArray(lilyVAO);
 
-        // Generate buffers
-        glGenVertexArrays(1, &sphereVAO);
-        glGenBuffers(1, &sphereVBO);
-        glGenBuffers(1, &sphereEBO);
+        // 绑定并填充顶点缓冲区
+        glBindBuffer(GL_ARRAY_BUFFER, lilyVBO);
+        glBufferData(GL_ARRAY_BUFFER, points.size() * sizeof(glm::vec3), points.data(), GL_STATIC_DRAW);
 
-        // Bind VAO
-        glBindVertexArray(sphereVAO);
-
-        // Bind and fill vertex buffer
-        glBindBuffer(GL_ARRAY_BUFFER, sphereVBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(sphereVertices), sphereVertices, GL_STATIC_DRAW);
-
-        // Bind and fill element buffer
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sphereEBO);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(sphereIndices), sphereIndices, GL_STATIC_DRAW);
-
-        // Set vertex attribute pointers
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)0);            // Position
+        // 设置顶点属性指针
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void *)0); // 位置
         glEnableVertexAttribArray(0);
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(3 * sizeof(float))); // Normal
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(6 * sizeof(float))); // Texture coords
-        glEnableVertexAttribArray(2);
 
-        // Unbind VAO
+        // 解绑顶点数组对象
         glBindVertexArray(0);
 
         initialized = true;
     }
 
-    // Render Sphere
-    glBindVertexArray(sphereVAO);
-    glDrawElements(GL_TRIANGLES, 6 * 6 * (sectors * stacks / 2), GL_UNSIGNED_INT, 0); // 6 indices per face, 6 faces per sector*stacks
+    // 渲染百合花点云
+    glBindVertexArray(lilyVAO);
+    glDrawArrays(GL_POINTS, 0, numPetals * (pointsPerPetal + 1));
     glBindVertexArray(0);
 }
 
-// 绘制点云
-void renderPointCloudSphere()
+
+
+void renderSphereByPointCloud()
 {
     static bool initialized = false;
     static unsigned int sphereVAO, sphereVBO;
-	std::vector<glm::vec3> points;
-    const int sectors = 36;
+	// 水平切割数
+	const int sectors = 36;
+	// 垂直切割数
     const int stacks = 18;
 
     if (!initialized)
     {
-        
+        std::vector<glm::vec3> points;
+        const int sectors = 36;
+        const int stacks = 18;
 
-        // for (int i = 0; i <= stacks; ++i)
-        // {
-        //     float phi = glm::pi<float>() * static_cast<float>(i) / static_cast<float>(stacks);
-        //     for (int j = 0; j <= sectors; ++j)
-        //     {
-        //         float theta = 2.0f * glm::pi<float>() * static_cast<float>(j) / static_cast<float>(sectors);
-        //         float x = cos(theta) * sin(phi);
-        //         float y = cos(phi);
-        //         float z = sin(theta) * sin(phi);
-        //         points.push_back(glm::vec3(x, y, z));
-        //     }
-        // }
-
-		std::string filePath = "./static/model/bunny/bun315.ply";
-
-    	std::vector<glm::vec3> points = PLYHandler::readPLY(filePath);
+        for (int i = 0; i <= stacks; ++i)
+        {
+            float phi = glm::pi<float>() * static_cast<float>(i) / static_cast<float>(stacks);
+            for (int j = 0; j <= sectors; ++j)
+            {
+                float theta = 2.0f * glm::pi<float>() * static_cast<float>(j) / static_cast<float>(sectors);
+                float x = cos(theta) * sin(phi);
+                float y = cos(phi);
+                float z = sin(theta) * sin(phi);
+                points.push_back(glm::vec3(x, y, z));
+            }
+        }
 
         // Generate buffers
         glGenVertexArrays(1, &sphereVAO);
         glGenBuffers(1, &sphereVBO);
+
+		// Set point size
+    	glPointSize(5.0f); // Adjust the size as needed
 
         // Bind VAO
         glBindVertexArray(sphereVAO);
@@ -1008,15 +876,14 @@ void renderPointCloudSphere()
         initialized = true;
     }
 
-    // Set point size
-    glPointSize(5.0f); // Adjust the size as needed
-
     // Render sphere point cloud
     glBindVertexArray(sphereVAO);
     glDrawArrays(GL_POINTS, 0, (sectors + 1) * (stacks + 1));
     glBindVertexArray(0);
 }
-void renderPointCloud()
+
+// 测试读取ply文件数据用
+void renderBunnyByPointCloud()
 {
     static bool initialized = false;
     static unsigned int pointCloudVAO, pointCloudVBO;
@@ -1053,91 +920,13 @@ void renderPointCloud()
     }
 
     // Set point size
-    glPointSize(10.0f); // Adjust the size as needed
+    glPointSize(5.0f); // Adjust the size as needed
 
     // Render point cloud
     glBindVertexArray(pointCloudVAO);
     glDrawArrays(GL_POINTS, 0, 40000);
     glBindVertexArray(0);
 }
-
-
-unsigned int pyramidVAO = 0;
-unsigned int pyramidVBO = 0;
-unsigned int pyramidEBO = 0;
-void renderStar()
-{
-    // Initialize (if necessary)
-    if (pyramidVAO == 0)
-    {
-        // Define vertices for pyramid
-        float pyramidVertices[] = {
-            // Positions             // Normals            // Texture coords
-            // Base
-            0.0f, -0.5f, 0.0f,       0.0f, -1.0f, 0.0f,   0.5f, 0.0f, // Center
-            0.5f, -0.5f, -0.5f,      0.0f, -1.0f, 0.0f,   1.0f, 0.5f, // 1
-            0.866f, -0.5f, -0.25f,   0.0f, -1.0f, 0.0f,   0.75f, 1.0f, // 2
-            0.866f, -0.5f, 0.25f,    0.0f, -1.0f, 0.0f,   0.25f, 1.0f, // 3
-            0.5f, -0.5f, 0.5f,       0.0f, -1.0f, 0.0f,   0.0f, 0.5f, // 4
-            -0.5f, -0.5f, 0.5f,      0.0f, -1.0f, 0.0f,   0.0f, 0.0f, // 5
-            -0.866f, -0.5f, 0.25f,   0.0f, -1.0f, 0.0f,   0.25f, 0.0f, // 6
-            -0.866f, -0.5f, -0.25f,  0.0f, -1.0f, 0.0f,   0.75f, 0.0f, // 7
-            -0.5f, -0.5f, -0.5f,     0.0f, -1.0f, 0.0f,   1.0f, 0.5f, // 8
-        };
-
-        unsigned int pyramidIndices[] = {
-    // Base
-    0, 1, 2,
-    0, 2, 3,
-    0, 3, 4,
-    0, 4, 5,
-    0, 5, 6,
-    0, 6, 7,
-    0, 7, 8,
-    0, 8, 9,
-    1, 2, 9, // Side triangles
-    2, 3, 9,
-    3, 4, 9,
-    4, 5, 9,
-    5, 6, 9,
-    6, 7, 9,
-    7, 8, 9,
-    8, 1, 9,
-};
-        // Generate buffers
-        glGenVertexArrays(1, &pyramidVAO);
-        glGenBuffers(1, &pyramidVBO);
-        glGenBuffers(1, &pyramidEBO);
-
-        // Bind VAO
-        glBindVertexArray(pyramidVAO);
-
-        // Bind and fill vertex buffer
-        glBindBuffer(GL_ARRAY_BUFFER, pyramidVBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(pyramidVertices), pyramidVertices, GL_STATIC_DRAW);
-
-        // Bind and fill element buffer
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pyramidEBO);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(pyramidIndices), pyramidIndices, GL_STATIC_DRAW);
-
-        // Set vertex attribute pointers
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0); // Position
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float))); // Normal
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float))); // Texture coords
-        glEnableVertexAttribArray(2);
-
-        // Unbind VAO
-        glBindVertexArray(0);
-    }
-
-    // Render Pyramid
-    glBindVertexArray(pyramidVAO);
-    glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0); // 12 triangles, 3 vertices per triangle
-    glBindVertexArray(0);
-}
-
 
 
 // renderQuad() renders a 1x1 XY quad in NDC
@@ -1285,8 +1074,11 @@ void processInput(GLFWwindow *window)
 	// 曝光度
 	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
 	{
-		if (exposure > 0.0f)
+		
+		if (exposure > 0.0f){
 			exposure -= 0.001f;
+		}
+			
 		else
 			exposure = 0.0f;
 	}
