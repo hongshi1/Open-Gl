@@ -355,7 +355,7 @@ int main()
 	lightPositions.push_back(glm::vec3(3.0f, 0.5f, 1.0f));
 	lightPositions.push_back(glm::vec3(-.8f, 2.4f, -1.0f));
 	// 点云球的球心
-	lightPositions.push_back(glm::vec3(5.0f, 0.0f, 0.0));
+	lightPositions.push_back(glm::vec3(6.0f, 0.0f, 0.0));
 	// colors
 	vector<glm::vec3> lightColors;
 	lightColors.push_back(glm::vec3(5.0f, 5.0f, 5.0f));
@@ -465,43 +465,43 @@ int main()
 		
 
 		// 创建多个立方体作为物体
-		// glBindTexture(GL_TEXTURE_2D, containerMap);
-		// model = glm::mat4(1.0f);
-		// model = glm::translate(model, glm::vec3(0.0f, 1.0f, 0.0f));
-		// model = glm::scale(model, glm::vec3(0.5f));
-		// shader.setMat4("model", model);
-		// renderCube();
+		glBindTexture(GL_TEXTURE_2D, containerMap);
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(0.0f, 1.0f, 0.0f));
+		model = glm::scale(model, glm::vec3(0.5f));
+		shader.setMat4("model", model);
+		renderCube();
 
-		// model = glm::mat4(1.0f);
-		// model = glm::translate(model, glm::vec3(2.0f, 0.0f, 1.0));
-		// model = glm::scale(model, glm::vec3(0.5f));
-		// shader.setMat4("model", model);
-		// renderCube();
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(2.0f, 0.0f, 1.0));
+		model = glm::scale(model, glm::vec3(0.5f));
+		shader.setMat4("model", model);
+		renderCube();
 
-		// model = glm::mat4(1.0f);
-		// model = glm::translate(model, glm::vec3(-1.0f, -1.0f, 2.0));
-		// model = glm::rotate(model, glm::radians(60.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
-		// shader.setMat4("model", model);
-		// renderCube();
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-1.0f, -1.0f, 2.0));
+		model = glm::rotate(model, glm::radians(60.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
+		shader.setMat4("model", model);
+		renderCube();
 
-		// model = glm::mat4(1.0f);
-		// model = glm::translate(model, glm::vec3(0.0f, 2.7f, 4.0));
-		// model = glm::rotate(model, glm::radians(23.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
-		// model = glm::scale(model, glm::vec3(1.25));
-		// shader.setMat4("model", model);
-		// renderCube();
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(0.0f, 2.7f, 4.0));
+		model = glm::rotate(model, glm::radians(23.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
+		model = glm::scale(model, glm::vec3(1.25));
+		shader.setMat4("model", model);
+		renderCube();
 
-		// model = glm::mat4(1.0f);
-		// model = glm::translate(model, glm::vec3(-2.0f, 1.0f, -3.0));
-		// model = glm::rotate(model, glm::radians(124.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
-		// shader.setMat4("model", model);
-		// renderCube();
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-2.0f, 1.0f, -3.0));
+		model = glm::rotate(model, glm::radians(124.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
+		shader.setMat4("model", model);
+		renderCube();
 
-		// model = glm::mat4(1.0f);
-		// model = glm::translate(model, glm::vec3(-3.0f, 0.0f, 0.0));
-		// model = glm::scale(model, glm::vec3(0.5f));
-		// shader.setMat4("model", model);
-		// renderCube();
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-3.0f, 0.0f, 0.0));
+		model = glm::scale(model, glm::vec3(0.5f));
+		shader.setMat4("model", model);
+		renderCube();
 
 
 		// 设置透明度
@@ -527,7 +527,7 @@ int main()
 		pointCloudShader.setMat4("view", view);
 		
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(4.0f, 0.0f, 0.0));
+		model = glm::translate(model, glm::vec3(5.0f, 0.0f, 0.0));
 		model = glm::scale(model, glm::vec3(1.0f));
 		pointCloudShader.setMat4("model", model);
 
@@ -545,14 +545,14 @@ int main()
 
 		// 根据点云绘制球体		
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(5.0f, 0.0f, 0.0));
+		model = glm::translate(model, glm::vec3(6.0f, 0.0f, 0.0));
 		// 绕 y 轴旋转
 		model = glm::rotate(model, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f)); 
 		model = glm::scale(model, glm::vec3(1.0f));
 		pointCloudShader.setMat4("model", model);
-		//renderSphereByPointCloud();
+		renderSphereByPointCloud();
 		// 绘制花朵点云
-		renderFlowerByPointCloud(0.5f);
+		// renderFlowerByPointCloud(0.5f);
 			
 		// 更新旋转角度
     	angle += rotationSpeed * deltaTime; // deltaTime是上一帧到当前帧的时间间隔
