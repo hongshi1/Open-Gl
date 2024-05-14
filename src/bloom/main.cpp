@@ -31,6 +31,7 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos);
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
 unsigned int loadTexture(char const *path, bool gammaCorrection);
 unsigned int loadCubemap(vector<std::string> faces);
+void renderCarpet(Shader& magicCarpetShader, GLuint& woodMap, glm::mat4 projection, glm::mat4 view, float currentTime) ;
 
 void renderQuad();
 void renderCube();
@@ -70,6 +71,9 @@ bool firstMouse = true;
 bool bloomKeyPressed = false;
 bool bloom = true;
 float exposure = 1.0;
+void renderWater(Shader &waterShader, unsigned int normalTexture, unsigned int noiseTexture, unsigned int cubeMapTexture, float deltaTime, glm::vec3 lightPos, glm::vec3 viewPos) ;
+
+
 
 int main()
 {
@@ -129,9 +133,10 @@ int main()
 	Shader shaderBlur("./src/bloom/shader/bloom_blur_vert.glsl", "./src/bloom/shader/bloom_blur_frag.glsl");
 	Shader shaderFinal("./src/bloom/shader/bloom_final_vert.glsl", "./src/bloom/shader/bloom_final_frag.glsl");
 	Shader skyboxShader("./src/bloom/shader/skybox_vert.glsl", "./src/bloom/shader/skybox_frag.glsl");
+	Shader waterShader("./src/bloom/shader/water_vert.glsl", "./src/bloom/shader/water_frag.glsl");
+	Shader magicCarpetShader("./src/bloom/shader/magic_carpet_vert.glsl", "./src/bloom/shader/magic_carpet_frag.glsl");
 	//针对点云的shader
 	Shader pointCloudShader("./src/bloom/shader/model_sphere_vert.glsl", "./src/bloom/shader/model_sphere_frag.glsl");
-
 	// 顶点数组
 	float cubeVertices[] = {
 			// Back face
@@ -247,13 +252,20 @@ int main()
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
 
 	// 加载纹理
+	
+
 	unsigned int cubeTexture = loadTexture("./static/texture/container.jpg", false);
+	unsigned int waterTexture = loadTexture("./static/images/wave.bmp", false);
+	// 加载法线贴图
+	unsigned int normalTexture = loadTexture("./static/texture/TexturesCom_MuddySand2_2x2_2K_normal.png", false);
+	unsigned int noiseTexture = loadTexture("./static/texture/perlin.png", false);
+
 	//加载钻石形状的纹理
 	// unsigned int diamondTexture = loadTexture("./static/texture/subskybox/eight.png", false);
 	//加载球体的纹理
 	unsigned int sphereTexture = loadTexture("./static/texture/subskybox/sphere8.jpg", false);
+	//正八面体的纹理
 	unsigned int diamondTexture = loadTexture("./static/texture/subskybox/sphere2.jpg", false);
-	
 	vector<std::string> faces
 		{
 			"./static/texture/skybox/right.jpg",
@@ -275,7 +287,7 @@ int main()
 
 	// 加载贴图
 	// --------
-	unsigned int woodMap = loadTexture("./static/texture/awesomeface.png", true);
+	unsigned int woodMap = loadTexture("./static/images/b.jpg", false);
 	unsigned int containerMap = loadTexture("./static/texture/container2.png", true);
 
 	// 配置浮点帧缓冲区
@@ -417,13 +429,30 @@ int main()
 		glDepthFunc(GL_LESS);
 
 		// glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		// 导入光源位置和摄像机位置
+		glm::vec3 lightPos(1.2f, 2.0f, 1.0f); 
+		// glm::vec3 lightPos(1.2f, 2.0f, 1.0f); 
+	
+		renderWater(waterShader, normalTexture, noiseTexture, cubemapTexture, deltaTime, lightPos, camera.Position);
+		
+		
+		magicCarpetShader.use();
+		magicCarpetShader.setMat4("projection", projection);
+		magicCarpetShader.setMat4("view", view);
+		magicCarpetShader.setMat4("model", model);
+		magicCarpetShader.setFloat("time", glfwGetTime());
+		renderCarpet(magicCarpetShader, woodMap, projection, view, glfwGetTime());
+
+		
+
+
 
 
 		shader.use();
 		shader.setMat4("projection", projection);
 		shader.setMat4("view", view);
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, woodMap);
+		
 
 		// 设置灯光参数值
 		for (unsigned int i = 0; i < lightPositions.size(); i++)
@@ -433,11 +462,7 @@ int main()
 		}
 		shader.setVec3("viewPos", camera.Position);
 		// 创建一个大的立方体作为地板
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f));
-		model = glm::scale(model, glm::vec3(12.5f, 0.5f, 12.5f));
-		shader.setMat4("model", model);
-		renderCube();
+		
 
 		// 创建多个立方体作为物体
 		// glBindTexture(GL_TEXTURE_2D, containerMap);
@@ -760,6 +785,60 @@ void renderCube()
 	glDrawArrays(GL_TRIANGLES, 0, 36);
 	glBindVertexArray(0);
 }
+unsigned int waterVAO = 0;
+unsigned int waterVBO = 0;
+void renderWater(Shader &waterShader, unsigned int normalTexture, unsigned int noiseTexture, unsigned int cubeMapTexture, float deltaTime, glm::vec3 lightPos, glm::vec3 viewPos) {
+    if (waterVAO == 0) {
+        float waterVertices[] = {
+            -10.0f, 0.0f, -10.0f,  0.0f, 0.0f,
+            10.0f, 0.0f, -10.0f,  1.0f, 0.0f,
+            -10.0f, 0.0f,  10.0f,  0.0f, 1.0f,
+            10.0f, 0.0f, -10.0f,  1.0f, 0.0f,
+            10.0f, 0.0f,  10.0f,  1.0f, 1.0f,
+            -10.0f, 0.0f,  10.0f,  0.0f, 1.0f
+        };
+
+        glGenVertexArrays(1, &waterVAO);
+        glGenBuffers(1, &waterVBO);
+        glBindVertexArray(waterVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, waterVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(waterVertices), waterVertices, GL_STATIC_DRAW);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    }
+
+    waterShader.use();
+    glm::mat4 model = glm::mat4(1.0f);
+    glm::mat4 view = camera.GetViewMatrix();
+    glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+    glm::mat4 normalMatrix = glm::transpose(glm::inverse(model));
+
+    waterShader.setMat4("ModelMatrix", model);
+    waterShader.setMat4("IT_ModelMatrix", normalMatrix);
+    waterShader.setMat4("ViewMatrix", view);
+    waterShader.setMat4("ProjectMatrix", projection);
+    waterShader.setVec3("cameraPos", camera.Position);
+    waterShader.setVec3("LightLocation", lightPos);
+    waterShader.setFloat("totalTime", glfwGetTime());
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, normalTexture);
+    waterShader.setInt("T_Water_N", 0);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMapTexture);
+    waterShader.setInt("cubeMap", 1);
+
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, noiseTexture);
+    waterShader.setInt("T_Perlin_Noise_M", 2);
+
+    glBindVertexArray(waterVAO);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindVertexArray(0);
+}
 
 void renderFlowerByPointCloud(float openness)
 {
@@ -927,8 +1006,6 @@ void renderBunnyByPointCloud()
     glDrawArrays(GL_POINTS, 0, 40000);
     glBindVertexArray(0);
 }
-
-
 // renderQuad() renders a 1x1 XY quad in NDC
 // -----------------------------------------
 unsigned int quadVAO = 0;
@@ -1215,3 +1292,63 @@ void setupVertices(void)
 	glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
 	glBufferData(GL_ARRAY_BUFFER, nValues.size() * sizeof(float), &(nValues[0]), GL_STATIC_DRAW);
 }
+
+
+void renderCarpet(Shader& magicCarpetShader, GLuint& woodMap, glm::mat4 projection, glm::mat4 view, float currentTime) {
+    static GLuint VAO = 0, VBO = 0, EBO = 0;
+    if (VAO == 0) {
+        float magicCarpetVertices[] = {
+            // positions        // texture Coords
+            -6.25f, 0.0f, 2.5f,  0.0f, 0.0f,   // 左上
+             6.25f, 0.0f, 2.5f,  1.0f, 0.0f,   // 右上
+             6.25f, 0.0f, -2.5f, 1.0f, 1.0f,   // 右下
+            -6.25f, 0.0f, -2.5f, 0.0f, 1.0f    // 左下
+        };
+
+        unsigned int indices[] = {
+            0, 1, 2,   // 第一个三角形
+            0, 2, 3    // 第二个三角形
+        };
+
+        glGenVertexArrays(1, &VAO);
+        glGenBuffers(1, &VBO);
+        glGenBuffers(1, &EBO);
+
+        glBindVertexArray(VAO);
+
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(magicCarpetVertices), magicCarpetVertices, GL_STATIC_DRAW);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+        // position attribute
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
+        // texture coord attribute
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+        glEnableVertexAttribArray(1);
+
+        glBindBuffer(GL_ARRAY_BUFFER, 0); 
+        glBindVertexArray(0);
+    }
+
+    magicCarpetShader.use();
+    magicCarpetShader.setMat4("projection", projection);
+    magicCarpetShader.setMat4("view", view);
+    magicCarpetShader.setFloat("time", currentTime);
+
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f)); // 根据指定位置调整
+    model = glm::scale(model, glm::vec3(7.0f, 0.5f, 4.0f));    // 确保魔毯尺寸正确
+    magicCarpetShader.setMat4("model", model);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, woodMap);
+    magicCarpetShader.setInt("texture1", 0);
+
+    glBindVertexArray(VAO);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    glBindVertexArray(0);
+}
+
