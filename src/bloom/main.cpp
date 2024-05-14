@@ -8,6 +8,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <tool/stb_image.h>
 #include <tool/gui.h>
+#include <tool/model.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -35,6 +36,7 @@ void renderCarpet(Shader& magicCarpetShader, GLuint& woodMap, glm::mat4 projecti
 
 void renderQuad();
 void renderCube();
+void renderBook();
 void setupVertices();
 //绘制形状
 void renderSphereByPointCloud();
@@ -137,6 +139,15 @@ int main()
 	Shader magicCarpetShader("./src/bloom/shader/magic_carpet_vert.glsl", "./src/bloom/shader/magic_carpet_frag.glsl");
 	//针对点云的shader
 	Shader pointCloudShader("./src/bloom/shader/model_sphere_vert.glsl", "./src/bloom/shader/model_sphere_frag.glsl");
+
+	Shader bookShader("./src/bloom/shader/book_vert.glsl", "./src/bloom/shader/book_frag.glsl");
+
+	//lyy
+	Model skull("./static/model/skull/skull.obj");
+	Model wolf("./static/model/wolf/Wolf_One_obj.obj");
+	Model planet("./static/model/planet/planet.obj");
+	Model duck("./static/model/duck/duck.obj");
+
 	// 顶点数组
 	float cubeVertices[] = {
 			// Back face
@@ -289,6 +300,15 @@ int main()
 	// --------
 	unsigned int woodMap = loadTexture("./static/images/b.jpg", false);
 	unsigned int containerMap = loadTexture("./static/texture/container2.png", true);
+	//lyy
+	//book
+	unsigned int texture1 = loadTexture("./static/texture/book/book.jpg", true);
+	unsigned int normalMap1 = loadTexture("./static/texture/book/book_normal1.jpg", true);
+	unsigned int texture2 = loadTexture("./static/texture/book/bookBottom.png", true);
+	unsigned int normalMap2 = loadTexture("./static/texture/book/bookBottom_normal.jpg", true);
+	unsigned int texture3 = loadTexture("./static/texture/book/bookLeft.png", true);
+	unsigned int normalMap3 = loadTexture("./static/texture/book/bookLeft_normal.jpg", true);
+	unsigned int texture4 = loadTexture("./static/texture/book/bookBack.png", true);
 
 	// 配置浮点帧缓冲区
 	// ----------------
@@ -377,6 +397,16 @@ int main()
 	shaderFinal.setInt("scene", 0);
 	shaderFinal.setInt("bloomBlur", 1);
 
+	//lyy
+	bookShader.use();
+	bookShader.setInt("texture1", 0);
+	bookShader.setInt("normalMap1", 1);
+	bookShader.setInt("texture2", 2);
+	bookShader.setInt("normalMap2", 3);
+	bookShader.setInt("texture3", 4);
+	bookShader.setInt("normalMap3", 5);
+	bookShader.setInt("texture4", 6);
+
 	// 渲染循环
 	// --------
 	while (!glfwWindowShouldClose(window))
@@ -443,11 +473,6 @@ int main()
 		magicCarpetShader.setFloat("time", glfwGetTime());
 		renderCarpet(magicCarpetShader, woodMap, projection, view, glfwGetTime());
 
-		
-
-
-
-
 		shader.use();
 		shader.setMat4("projection", projection);
 		shader.setMat4("view", view);
@@ -472,11 +497,11 @@ int main()
 		shader.setMat4("model", model);
 		renderCube();
 
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(2.0f, 0.0f, 1.0));
-		model = glm::scale(model, glm::vec3(0.5f));
-		shader.setMat4("model", model);
-		renderCube();
+		// model = glm::mat4(1.0f);
+		// model = glm::translate(model, glm::vec3(2.0f, 0.0f, 1.0));
+		// model = glm::scale(model, glm::vec3(0.5f));
+		// shader.setMat4("model", model);
+		// renderCube();
 
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(-1.0f, -1.0f, 2.0));
@@ -497,11 +522,71 @@ int main()
 		shader.setMat4("model", model);
 		renderCube();
 
+		// model = glm::mat4(1.0f);
+		// model = glm::translate(model, glm::vec3(-3.0f, 0.0f, 0.0));
+		// model = glm::scale(model, glm::vec3(0.5f));
+		// shader.setMat4("model", model);
+		// renderCube();
+
+		//book
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texture1);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, normalMap1);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, texture2);
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, normalMap2);
+		glActiveTexture(GL_TEXTURE4);
+		glBindTexture(GL_TEXTURE_2D, texture3);
+		glActiveTexture(GL_TEXTURE5);
+		glBindTexture(GL_TEXTURE_2D, normalMap3);
+		glActiveTexture(GL_TEXTURE6);
+		glBindTexture(GL_TEXTURE_2D, texture4);
+
+
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-3.0f, 0.0f, 0.0));
-		model = glm::scale(model, glm::vec3(0.5f));
+		model = glm::translate(model, glm::vec3(0.5f, 0.0f, 3.0f));  // 设置书本位置
+		model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));
+
+		bookShader.use();
+		bookShader.setMat4("model", model);
+		bookShader.setMat4("view", view);
+		bookShader.setMat4("projection", projection);
+		renderBook();
+
+		shader.use();
+		//skull
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(2.0f, -0.5f, -0.5f)); // translate it down so it's at the center of the scene
+		model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
+		model = glm::scale(model, glm::vec3(0.06f, 0.06f, 0.06f));	// it's a bit too big for our scene, so scale it down
 		shader.setMat4("model", model);
-		renderCube();
+		skull.Draw(shader);
+
+		//planet
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(2.0f, 0.0f, 3.0f)); // translate it down so it's at the center of the scene
+		model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
+		model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f));	// it's a bit too big for our scene, so scale it down
+		shader.setMat4("model", model);
+		planet.Draw(shader);
+
+		//wolf
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(2.0f, -0.5f, 2.0f)); // translate it down so it's at the center of the scene
+		model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+		shader.setMat4("model", model);
+		wolf.Draw(shader);
+
+		//duck
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-1.5f, -0.5f, 4.0f)); // translate it down so it's at the center of the scene
+		model = glm::scale(model, glm::vec3(0.02f, 0.02f, 0.02f));
+		model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
+		shader.setMat4("model", model);
+		duck.Draw(shader);
 
 
 		// 设置透明度
@@ -1011,7 +1096,6 @@ void renderBunnyByPointCloud()
 unsigned int quadVAO = 0;
 unsigned int quadVBO;
 void renderQuad()
-
 {
 	if (quadVAO == 0)
 	{
@@ -1052,6 +1136,82 @@ void renderQuad()
 	glBindVertexArray(quadVAO);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	glBindVertexArray(0);
+}
+
+//lyy
+unsigned int bookVAO = 0;
+unsigned int bookVBO = 0;
+void renderBook()
+{
+    // initialize (if necessary)
+    if (bookVAO == 0)
+    {
+        float vertices[] = {
+            // front face (face ID 1)
+            -4.5f, -6.0f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,    // bottom-left
+            4.5f, -6.0f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f,     // bottom-right
+            4.5f, 6.0f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f,      // top-right
+            4.5f, 6.0f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f,      // top-right
+            -4.5f, 6.0f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,     // top-left
+            -4.5f, -6.0f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,    // bottom-left
+            // back face (face ID 0)
+            -4.5f, -6.0f, 0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, // bottom-left
+            4.5f, -6.0f, 0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, 0.0f,   // bottom-right
+            4.5f, 6.0f, 0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f, 0.0f,    // top-right
+            4.5f, 6.0f, 0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f, 0.0f,    // top-right
+            -4.5f, 6.0f, 0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f,   // top-left
+            -4.5f, -6.0f, 0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f,  // bottom-left
+            // top face (face ID 5)
+            -4.5f, 6.0f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 5.0f,    // top-left
+            4.5f, 6.0f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 5.0f,      // top-right
+            4.5f, 6.0f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 5.0f,     // bottom-right
+            4.5f, 6.0f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 5.0f,     // bottom-right
+            -4.5f, 6.0f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 5.0f,    // bottom-left
+            -4.5f, 6.0f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 5.0f,      // top-left
+            // bottom face (face ID 4)
+            -4.5f, -6.0f, -0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 4.0f,  // bottom-left
+            4.5f, -6.0f, -0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 4.0f,   // bottom-right
+            4.5f, -6.0f, 0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f, 4.0f,    // top-right
+            4.5f, -6.0f, 0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f, 4.0f,    // top-right
+            -4.5f, -6.0f, 0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, 4.0f,   // top-left
+            -4.5f, -6.0f, -0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 4.0f,  // bottom-left
+            // left face (face ID 2)
+            -4.5f, 6.0f, 0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 2.0f,    // top-right
+            -4.5f, 6.0f, -0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 2.0f,   // top-left
+            -4.5f, -6.0f, -0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 2.0f,  // bottom-left
+            -4.5f, -6.0f, -0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 2.0f,  // bottom-left
+            -4.5f, -6.0f, 0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 2.0f,   // bottom-right
+            -4.5f, 6.0f, 0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 2.0f,    // top-right
+            // right face (face ID 3)
+            4.5f, 6.0f, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 3.0f,      // top-left
+            4.5f, -6.0f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 3.0f,    // bottom-right
+            4.5f, 6.0f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 3.0f,     // top-right
+            4.5f, -6.0f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 3.0f,    // bottom-right
+            4.5f, 6.0f, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 3.0f,      // top-left
+            4.5f, -6.0f, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 3.0f      // bottom-left
+        };
+        glGenVertexArrays(1, &bookVAO);
+        glGenBuffers(1, &bookVBO);
+        // fill buffer
+        glBindBuffer(GL_ARRAY_BUFFER, bookVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+        // link vertex attributes
+        glBindVertexArray(bookVAO);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void *)0);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void *)(3 * sizeof(float)));
+        glEnableVertexAttribArray(2);
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void *)(6 * sizeof(float)));
+        glEnableVertexAttribArray(3);
+        glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void *)(8 * sizeof(float)));
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+    }
+    // render book
+    glBindVertexArray(bookVAO);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+    glBindVertexArray(0);
 }
 
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset)
