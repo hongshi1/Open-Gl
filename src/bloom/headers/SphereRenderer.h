@@ -13,8 +13,17 @@ private:
     const int stacks;
 
 public:
+    // 构造函数
     SphereRenderer();
+
+    // 析构函数
+    ~SphereRenderer();
+
+    // 渲染球体的方法
     void renderSphere();
+
+    // 清理资源的方法
+    void cleanup();
 };
 
-#endif
+#endif // SPHERERENDERER_H

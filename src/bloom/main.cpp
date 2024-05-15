@@ -24,6 +24,8 @@
 #include "ConeRenderer.h"
 // 平面花
 #include "FlowerRenderer.h"
+// 正十二面体
+#include "IcosahedronRenderer.h"
 using namespace std;
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
@@ -54,9 +56,11 @@ ImportedModel hyperCar("./static/model/hyperCar/lamborghini-aventador-pbribl.obj
 SphereRenderer sphereRenderer;
 DiamondRenderer diamondRenderer;
 // 创建圆锥体渲染器
-ConeRenderer cone(36, 0.5f, 1.0f);
-// 创建圆锥体渲染器
+// ConeRenderer cone(36, 0.5f, 1.0f);
+// 创建平面花朵渲染器
 FlowerRenderer flower(36, 0.5f, 1.0f);
+// 创建正十二面体渲染器
+IcosahedronRenderer icosahedronRenderer; 
 
 float deltaTime = 0.0f; // 当前帧与上一帧之间的时间差
 float lastTime = 0.0f;	// 上一帧的时间
@@ -74,8 +78,6 @@ bool bloomKeyPressed = false;
 bool bloom = true;
 float exposure = 1.0;
 void renderWater(Shader &waterShader, unsigned int normalTexture, unsigned int noiseTexture, unsigned int cubeMapTexture, float deltaTime, glm::vec3 lightPos, glm::vec3 viewPos) ;
-
-
 
 int main()
 {
@@ -238,6 +240,53 @@ int main()
 			-1.0f, -1.0f, 1.0f,
 			1.0f, -1.0f, 1.0f};
 
+			// 绘制星星形状
+	float scale = 0.1f; // 缩放因子
+    float spacing = 0.3f; // 间隔
+
+    glm::vec3 cubeGroupVertices[] = {
+        glm::vec3(-spacing, -spacing, -spacing),
+        glm::vec3(spacing, -spacing, -spacing),
+        glm::vec3(-spacing, spacing, -spacing),
+        glm::vec3(spacing, spacing, -spacing),
+        glm::vec3(-spacing, -spacing, spacing),
+        glm::vec3(spacing, -spacing, spacing),
+        glm::vec3(-spacing, spacing, spacing),
+        glm::vec3(spacing, spacing, spacing)
+    };
+	// 定义大立方体的顶点数组
+	glm::vec3 largeCubeVertices[] = {
+    glm::vec3(-spacing * 1.1, -spacing * 1.1, -spacing * 1.1),
+    glm::vec3(spacing * 1.1, -spacing * 1.1, -spacing * 1.1),
+    glm::vec3(-spacing * 1.1, spacing * 1.1, -spacing * 1.1),
+    glm::vec3(spacing * 1.1, spacing * 1.1, -spacing * 1.1),
+    glm::vec3(-spacing * 1.1, -spacing * 1.1, spacing * 1.1),
+    glm::vec3(spacing * 1.1, -spacing * 1.1, spacing * 1.1),
+    glm::vec3(-spacing * 1.1, spacing * 1.1, spacing * 1.1),
+    glm::vec3(spacing * 1.1, spacing * 1.1, spacing * 1.1),
+
+	// 面心
+    glm::vec3(0.0f, 0.0f, -spacing * 1.1), // 前面中心
+    glm::vec3(0.0f, 0.0f, spacing * 1.1),  // 后面中心
+    glm::vec3(-spacing * 1.1, 0.0f, 0.0f),  // 左侧中心
+    glm::vec3(spacing * 1.1, 0.0f, 0.0f),   // 右侧中心
+    glm::vec3(0.0f, -spacing * 1.1, 0.0f),  // 下面中心
+    glm::vec3(0.0f, spacing * 1.1, 0.0f),   // 上面中心
+    // 棱心
+    glm::vec3(-spacing * 1.1, 0.0f, -spacing * 1.1), // 前左棱心
+    glm::vec3(-spacing * 1.1, 0.0f, spacing * 1.1),  // 后左棱心
+    glm::vec3(spacing * 1.1, 0.0f, -spacing * 1.1),  // 前右棱心
+    glm::vec3(spacing * 1.1, 0.0f, spacing * 1.1),   // 后右棱心
+    glm::vec3(0.0f, -spacing * 1.1, -spacing * 1.1), // 前下棱心
+    glm::vec3(0.0f, -spacing * 1.1, spacing * 1.1),  // 后下棱心
+    glm::vec3(0.0f, spacing * 1.1, -spacing * 1.1),  // 前上棱心
+    glm::vec3(0.0f, spacing * 1.1, spacing * 1.1),   // 后上棱心
+    glm::vec3(-spacing * 1.1, -spacing * 1.1, 0.0f), // 左下棱心
+    glm::vec3(-spacing * 1.1, spacing * 1.1, 0.0f),  // 左上棱心
+    glm::vec3(spacing * 1.1, -spacing * 1.1, 0.0f),  // 右下棱心
+    glm::vec3(spacing * 1.1, spacing * 1.1, 0.0f)    // 右上棱心
+};
+
 	unsigned int cubeVAO, cubeVBO;
 	glGenVertexArrays(1, &cubeVAO);
 	glGenBuffers(1, &cubeVBO);
@@ -264,7 +313,6 @@ int main()
 
 	// 加载纹理
 	
-
 	unsigned int cubeTexture = loadTexture("./static/texture/container.jpg", false);
 	unsigned int waterTexture = loadTexture("./static/images/wave.bmp", false);
 	// 加载法线贴图
@@ -288,15 +336,13 @@ int main()
 
 	// 		};
 	vector<std::string> faces
-	{
-		"./static/texture/skybox/right.jpg",
-		"./static/texture/skybox/left.jpg",
-		"./static/texture/skybox/top.jpg",
-		"./static/texture/skybox/bottom.jpg",
-		"./static/texture/skybox/front.jpg",
-		"./static/texture/skybox/back.jpg"
-	};
-	
+		{
+			"./static/texture/skyboxq/ny.png",
+			"./static/texture/skyboxq/nx.png",
+			"./static/texture/skyboxq/nz.png",
+			"./static/texture/skyboxq/px.png",
+			"./static/texture/skyboxq/py.png",
+			"./static/texture/skyboxq/pz.png",};
 	unsigned int cubemapTexture = loadCubemap(faces);
 
 
@@ -642,8 +688,6 @@ int main()
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 		// 渲染球体
-		//renderSphere();
-		// 渲染球体
     	sphereRenderer.renderSphere();
 		
 		// 关闭混合功能
@@ -656,66 +700,21 @@ int main()
 		model = glm::rotate(model, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f)); 
 		model = glm::scale(model, glm::vec3(1.0f));
 		pointCloudShader.setMat4("model", model);
-		renderSphereByPointCloud();
+		//renderSphereByPointCloud();
 		// 绘制花朵点云
-		// renderFlowerByPointCloud(0.5f);
+		icosahedronRenderer.renderIcosahedron();
 			
 		// 更新旋转角度
     	angle += rotationSpeed * deltaTime; // deltaTime是上一帧到当前帧的时间间隔
 
-		// 绘制星星形状
-	float scale = 0.1f; // 缩放因子
-    float spacing = 0.3f; // 间隔
 
-    glm::vec3 cubeVertices[] = {
-        glm::vec3(-spacing, -spacing, -spacing),
-        glm::vec3(spacing, -spacing, -spacing),
-        glm::vec3(-spacing, spacing, -spacing),
-        glm::vec3(spacing, spacing, -spacing),
-        glm::vec3(-spacing, -spacing, spacing),
-        glm::vec3(spacing, -spacing, spacing),
-        glm::vec3(-spacing, spacing, spacing),
-        glm::vec3(spacing, spacing, spacing)
-    };
-	// 定义大立方体的顶点数组
-	glm::vec3 largeCubeVertices[] = {
-    glm::vec3(-spacing * 1.1, -spacing * 1.1, -spacing * 1.1),
-    glm::vec3(spacing * 1.1, -spacing * 1.1, -spacing * 1.1),
-    glm::vec3(-spacing * 1.1, spacing * 1.1, -spacing * 1.1),
-    glm::vec3(spacing * 1.1, spacing * 1.1, -spacing * 1.1),
-    glm::vec3(-spacing * 1.1, -spacing * 1.1, spacing * 1.1),
-    glm::vec3(spacing * 1.1, -spacing * 1.1, spacing * 1.1),
-    glm::vec3(-spacing * 1.1, spacing * 1.1, spacing * 1.1),
-    glm::vec3(spacing * 1.1, spacing * 1.1, spacing * 1.1),
-
-	// 面心
-    glm::vec3(0.0f, 0.0f, -spacing * 1.1), // 前面中心
-    glm::vec3(0.0f, 0.0f, spacing * 1.1),  // 后面中心
-    glm::vec3(-spacing * 1.1, 0.0f, 0.0f),  // 左侧中心
-    glm::vec3(spacing * 1.1, 0.0f, 0.0f),   // 右侧中心
-    glm::vec3(0.0f, -spacing * 1.1, 0.0f),  // 下面中心
-    glm::vec3(0.0f, spacing * 1.1, 0.0f),   // 上面中心
-    // 棱心
-    glm::vec3(-spacing * 1.1, 0.0f, -spacing * 1.1), // 前左棱心
-    glm::vec3(-spacing * 1.1, 0.0f, spacing * 1.1),  // 后左棱心
-    glm::vec3(spacing * 1.1, 0.0f, -spacing * 1.1),  // 前右棱心
-    glm::vec3(spacing * 1.1, 0.0f, spacing * 1.1),   // 后右棱心
-    glm::vec3(0.0f, -spacing * 1.1, -spacing * 1.1), // 前下棱心
-    glm::vec3(0.0f, -spacing * 1.1, spacing * 1.1),  // 后下棱心
-    glm::vec3(0.0f, spacing * 1.1, -spacing * 1.1),  // 前上棱心
-    glm::vec3(0.0f, spacing * 1.1, spacing * 1.1),   // 后上棱心
-    glm::vec3(-spacing * 1.1, -spacing * 1.1, 0.0f), // 左下棱心
-    glm::vec3(-spacing * 1.1, spacing * 1.1, 0.0f),  // 左上棱心
-    glm::vec3(spacing * 1.1, -spacing * 1.1, 0.0f),  // 右下棱心
-    glm::vec3(spacing * 1.1, spacing * 1.1, 0.0f)    // 右上棱心
-};
 	//绑定纹理
 	glBindTexture(GL_TEXTURE_2D, diamondTexture);
     // 绘制内部八个正八面体
 for (int i = 0; i < 8; ++i) {
 
     glm::mat4 model = glm::mat4(1.0f);
-    glm::vec3 position = cubeVertices[i] * spacing;
+    glm::vec3 position = cubeGroupVertices[i] * spacing;
 
     model = glm::translate(model, position); // 设置位置
     model = glm::scale(model, glm::vec3(scale)); // 设置缩放
