@@ -79,8 +79,6 @@ bool bloom = true;
 float exposure = 1.0;
 void renderWater(Shader &waterShader, unsigned int normalTexture, unsigned int noiseTexture, unsigned int cubeMapTexture, float deltaTime, glm::vec3 lightPos, glm::vec3 viewPos) ;
 
-
-
 int main()
 {
 
@@ -672,7 +670,7 @@ int main()
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 		// 渲染球体
-		//renderSphere();
+		// renderSphere();
 		// 渲染球体
     	sphereRenderer.renderSphere();
 		
