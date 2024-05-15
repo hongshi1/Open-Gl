@@ -1,5 +1,8 @@
 #include "SphereRenderer.h"
 #include <cmath>
+#include <iostream>
+
+using namespace std;
 
 SphereRenderer::SphereRenderer() : initialized(false), sectors(36), stacks(18) {}
 
@@ -7,6 +10,7 @@ SphereRenderer::SphereRenderer() : initialized(false), sectors(36), stacks(18) {
 void SphereRenderer::renderSphere() {
     // Initialize (if necessary)
     if (!initialized) {
+        std::cout<<"初始化"<<std::endl;
         float sphereVertices[(sectors + 1) * (stacks + 1) * 8]; // 8 floats per vertex (3 positions + 3 normals + 2 texture coordinates)
         unsigned int sphereIndices[sectors * stacks * 6];
 
@@ -93,4 +97,17 @@ void SphereRenderer::renderSphere() {
     glBindVertexArray(sphereVAO);
     glDrawElements(GL_TRIANGLES, 6 * 6 * (sectors * stacks / 2), GL_UNSIGNED_INT, 0); // 6 indices per face, 6 faces per sector*stacks
     glBindVertexArray(0);
+}
+
+SphereRenderer::~SphereRenderer() {
+    this->cleanup();
+}
+
+void SphereRenderer::cleanup() {
+    if (initialized) {
+        glDeleteVertexArrays(1, &sphereVAO);
+        glDeleteBuffers(1, &sphereVBO);
+        glDeleteBuffers(1, &sphereEBO);
+        initialized = false;
+    }
 }
