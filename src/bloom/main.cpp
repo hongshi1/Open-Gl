@@ -279,12 +279,12 @@ int main()
 	unsigned int diamondTexture = loadTexture("./static/texture/subskybox/sphere2.jpg", false);
 	vector<std::string> faces
 		{
-			"./static/texture/skybox/right.jpg",
-			"./static/texture/skybox/left.jpg",
-			"./static/texture/skybox/top.jpg",
-			"./static/texture/skybox/bottom.jpg",
-			"./static/texture/skybox/front.jpg",
-			"./static/texture/skybox/back.jpg"};
+			"./static/texture/skyboxq/right1.jpg",
+			"./static/texture/skyboxq/left.jpg",
+			"./static/texture/skyboxq/top.jpg",
+			"./static/texture/skyboxq/bottom.jpg",
+			"./static/texture/skyboxq/front.jpg",
+			"./static/texture/skyboxq/back.jpg"};
 	unsigned int cubemapTexture = loadCubemap(faces);
 
 	// 创建imgui上下文
