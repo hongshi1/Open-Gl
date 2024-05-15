@@ -147,7 +147,7 @@ int main()
 	Model wolf("./static/model/wolf/Wolf_One_obj.obj");
 	Model planet("./static/model/planet/planet.obj");
 	Model duck("./static/model/duck/duck.obj");
-
+	Model pedestal("./static/model/3D_scifi_pedestal/tech_pedestal.obj");
 	// 顶点数组
 	float cubeVertices[] = {
 			// Back face
@@ -277,16 +277,26 @@ int main()
 	unsigned int sphereTexture = loadTexture("./static/texture/subskybox/sphere8.jpg", false);
 	//正八面体的纹理
 	unsigned int diamondTexture = loadTexture("./static/texture/subskybox/sphere2.jpg", false);
-	vector<std::string> faces
-		{
-			"./static/texture/skyboxq/ny.png",
-			"./static/texture/skyboxq/nx.png",
-			"./static/texture/skyboxq/nz.png",
-			"./static/texture/skyboxq/px.png",
-			"./static/texture/skyboxq/py.png",
-			"./static/texture/skyboxq/pz.png",
+	// vector<std::string> faces
+	// 	{
+	// 		"./static/texture/skyboxq/ny.png",
+	// 		"./static/texture/skyboxq/nx.png",
+	// 		"./static/texture/skyboxq/nz.png",
+	// 		"./static/texture/skyboxq/px.png",
+	// 		"./static/texture/skyboxq/py.png",
+	// 		"./static/texture/skyboxq/pz.png",
 
-			};
+	// 		};
+	vector<std::string> faces
+	{
+		"./static/texture/skybox/right.jpg",
+		"./static/texture/skybox/left.jpg",
+		"./static/texture/skybox/top.jpg",
+		"./static/texture/skybox/bottom.jpg",
+		"./static/texture/skybox/front.jpg",
+		"./static/texture/skybox/back.jpg"
+	};
+	
 	unsigned int cubemapTexture = loadCubemap(faces);
 
 
@@ -590,6 +600,14 @@ int main()
 		model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
 		shader.setMat4("model", model);
 		duck.Draw(shader);
+
+		//pedestal
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-1.5f, 2.5f, 2.0f)); 
+		model = glm::scale(model, glm::vec3(0.02f, 0.02f, 0.02f));
+		model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
+		shader.setMat4("model", model);
+		pedestal.Draw(shader);
 
 
 		// 设置透明度
@@ -1333,53 +1351,51 @@ void processInput(GLFWwindow *window)
 		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 	}
 }
-
 unsigned int loadTexture(char const *path, bool gammaCorrection)
 {
-	unsigned int textureID;
-	glGenTextures(1, &textureID);
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
 
-	//stbi_set_flip_vertically_on_load(true);
-	int width, height, nrComponents;
-	unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
-	if (data)
-	{
-		GLenum internalFormat;
-		GLenum dataFormat;
+    int width, height, nrComponents;
+    unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
+    if (data)
+    {
+        GLenum internalFormat;
+        GLenum dataFormat;
 
-		if (nrComponents == 1)
-		{
-			internalFormat = dataFormat = GL_RED;
-		}
-		else if (nrComponents == 3)
-		{
-			internalFormat = gammaCorrection ? GL_SRGB : GL_RGB;
-			dataFormat = GL_RGB;
-		}
-		else if (nrComponents == 4)
-		{
-			internalFormat = gammaCorrection ? GL_SRGB_ALPHA : GL_RGBA;
-			dataFormat = GL_RGBA;
-		}
+        if (nrComponents == 1)
+        {
+            internalFormat = dataFormat = GL_RED;
+        }
+        else if (nrComponents == 3)
+        {
+            internalFormat = gammaCorrection ? GL_SRGB : GL_RGB;
+            dataFormat = GL_RGB;
+        }
+        else if (nrComponents == 4)
+        {
+            internalFormat = gammaCorrection ? GL_SRGB_ALPHA : GL_RGBA;
+            dataFormat = GL_RGBA;
+        }
 
-		glBindTexture(GL_TEXTURE_2D, textureID);
-		glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, dataFormat, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, dataFormat, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
 
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-		stbi_image_free(data);
-	}
-	else
-	{
-		std::cout << "Texture failed to load at path: " << path << std::endl;
-		stbi_image_free(data);
-	}
+        stbi_image_free(data);
+    }
+    else
+    {
+        std::cout << "Texture failed to load at path: " << path << std::endl;
+        stbi_image_free(data);
+    }
 
-	return textureID;
+    return textureID;
 }
 
 unsigned int loadCubemap(vector<std::string> faces)
@@ -1421,6 +1437,7 @@ unsigned int loadCubemap(vector<std::string> faces)
 
     return textureID;
 }
+
 
 
 static const int numVAOs = 1;
