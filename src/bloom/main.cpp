@@ -329,13 +329,14 @@ int main()
 	unsigned int diamondTexture = loadTexture("./static/texture/subskybox/sphere2.jpg", false);
 	vector<std::string> faces
 		{
-			"./static/texture/skybox/right.jpg",
-			"./static/texture/skybox/left.jpg",
-			"./static/texture/skybox/top.jpg",
-			"./static/texture/skybox/bottom.jpg",
-			"./static/texture/skybox/front.jpg",
-			"./static/texture/skybox/back.jpg"};
+			"./static/texture/skyboxq/ny.png",
+			"./static/texture/skyboxq/nx.png",
+			"./static/texture/skyboxq/nz.png",
+			"./static/texture/skyboxq/px.png",
+			"./static/texture/skyboxq/py.png",
+			"./static/texture/skyboxq/pz.png",};
 	unsigned int cubemapTexture = loadCubemap(faces);
+
 
 	// 创建imgui上下文
 	// ---------------
@@ -1318,7 +1319,7 @@ void processInput(GLFWwindow *window)
 	{
 		
 		if (exposure > 0.0f){
-			exposure -= 0.001f;
+			exposure -= 0.01f;
 		}
 			
 		else
@@ -1326,7 +1327,7 @@ void processInput(GLFWwindow *window)
 	}
 	else if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
 	{
-		exposure += 0.001f;
+		exposure += 0.01f;
 	}
 
 	// 将鼠标指针从窗口中施放
@@ -1386,34 +1387,44 @@ unsigned int loadTexture(char const *path, bool gammaCorrection)
 
 unsigned int loadCubemap(vector<std::string> faces)
 {
-	unsigned int textureID;
-	glGenTextures(1, &textureID);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
 
-	int width, height, nrChannels;
-	for (unsigned int i = 0; i < faces.size(); i++)
-	{
-		unsigned char *data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
-		if (data)
-		{
-			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-									 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-			stbi_image_free(data);
-		}
-		else
-		{
-			std::cout << "Cubemap texture failed to load at path: " << faces[i] << std::endl;
-			stbi_image_free(data);
-		}
-	}
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    int width, height, nrChannels;
+    for (unsigned int i = 0; i < faces.size(); i++)
+    {
+        unsigned char *data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
+        if (data)
+        {
+            GLenum format;
+            if (nrChannels == 1)
+                format = GL_RED;
+            else if (nrChannels == 3)
+                format = GL_SRGB;
+            else if (nrChannels == 4)
+                format = GL_SRGB_ALPHA;
 
-	return textureID;
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+                         0, format, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+            std::cout << "Cubemap texture loaded at path: " << faces[i] << " (Width: " << width << ", Height: " << height << ", Channels: " << nrChannels << ")" << std::endl;
+            stbi_image_free(data);
+        }
+        else
+        {
+            std::cout << "Cubemap texture failed to load at path: " << faces[i] << std::endl;
+            stbi_image_free(data);
+        }
+    }
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    return textureID;
 }
+
 
 static const int numVAOs = 1;
 static const int numVBOs = 3;
