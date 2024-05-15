@@ -670,8 +670,6 @@ int main()
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 		// 渲染球体
-		// renderSphere();
-		// 渲染球体
     	sphereRenderer.renderSphere();
 		
 		// 关闭混合功能
