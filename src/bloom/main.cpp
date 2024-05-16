@@ -26,8 +26,6 @@
 #include "FlowerRenderer.h"
 // 正十二面体
 #include "IcosahedronRenderer.h"
-//模型加载
-#include "Model.h"
 using namespace std;
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
@@ -52,8 +50,8 @@ const unsigned int SCR_HEIGHT = 600;
 
 Camera camera(glm::vec3(0.0f, 0.0f, 5.0f));
 
-//初始化obj
-// ImportedModel hyperCar("./static/model/hyperCar/lamborghini-aventador-pbribl.obj");
+// 初始化obj
+//  ImportedModel hyperCar("./static/model/hyperCar/lamborghini-aventador-pbribl.obj");
 // 创建 SphereRenderer 对象
 SphereRenderer sphereRenderer;
 DiamondRenderer diamondRenderer;
@@ -131,6 +129,9 @@ int main()
 
 	// 启用gamma校正
 	//glEnable(GL_FRAMEBUFFER_SRGB);
+
+	//加载模型
+	Model hyperCar("./static/model/hyperCar/lamborghini-aventador-pbribl.obj");
 
 	// 编译shader
 	// ----------
