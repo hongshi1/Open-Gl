@@ -14,6 +14,7 @@
 class ShapeRenderer {
 public:
     ShapeRenderer(int verticesPerFace, int faces);
+    virtual ~ShapeRenderer();
     virtual void render() = 0;
 
 protected:

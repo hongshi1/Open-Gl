@@ -57,6 +57,21 @@ FlowerRenderer::FlowerRenderer(int sectors, float radius, float height)
     }
 }
 
+FlowerRenderer::~FlowerRenderer() {
+    cleanup();
+}
+
+void FlowerRenderer::cleanup() {
+    if (VAO != 0) {
+        glDeleteVertexArrays(1, &VAO);
+        glDeleteBuffers(1, &VBO);
+        glDeleteBuffers(1, &EBO);
+        VAO = 0;
+        VBO = 0;
+        EBO = 0;
+    }
+}
+
 void FlowerRenderer::render() {
     if (VAO == 0) {
         glGenVertexArrays(1, &VAO);

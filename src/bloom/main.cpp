@@ -502,6 +502,7 @@ int main()
 		glm::mat4 view = camera.GetViewMatrix();
 		glm::mat4 view1 = camera.GetViewMatrix();
 		glm::mat4 model = glm::mat4(1.0f);
+		glm::vec3 position;
 		
 		glDepthFunc(GL_LEQUAL);
 		skyboxShader.use();
@@ -700,9 +701,9 @@ int main()
 		model = glm::rotate(model, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f)); 
 		model = glm::scale(model, glm::vec3(1.0f));
 		pointCloudShader.setMat4("model", model);
-		//renderSphereByPointCloud();
+		renderSphereByPointCloud();
 		// 绘制花朵点云
-		icosahedronRenderer.renderIcosahedron();
+		// icosahedronRenderer.renderIcosahedron();
 			
 		// 更新旋转角度
     	angle += rotationSpeed * deltaTime; // deltaTime是上一帧到当前帧的时间间隔
@@ -713,8 +714,8 @@ int main()
     // 绘制内部八个正八面体
 for (int i = 0; i < 8; ++i) {
 
-    glm::mat4 model = glm::mat4(1.0f);
-    glm::vec3 position = cubeGroupVertices[i] * spacing;
+    model = glm::mat4(1.0f);
+    position = cubeGroupVertices[i] * spacing;
 
     model = glm::translate(model, position); // 设置位置
     model = glm::scale(model, glm::vec3(scale)); // 设置缩放
@@ -724,14 +725,14 @@ for (int i = 0; i < 8; ++i) {
 
     // 绘制外部大立方体
     for (int j = 0; j < 26; ++j) {
-        glm::mat4 outerModel = glm::mat4(1.0f);
-        glm::vec3 outerPosition = largeCubeVertices[j];
+       	model = glm::mat4(1.0f);
+    	position = largeCubeVertices[j];
 
-        outerModel = glm::translate(outerModel, outerPosition); // 设置位置
-        outerModel = glm::scale(outerModel, glm::vec3(scale * 2)); // 设置缩放
-		outerModel = glm::rotate(outerModel, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f)); 
+        model = glm::translate(model, position); // 设置位置
+        model = glm::scale(model, glm::vec3(scale * 2)); // 设置缩放
+		model = glm::rotate(model, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f)); 
 
-        pointCloudShader.setMat4("model", outerModel); // 设置模型矩阵
+        pointCloudShader.setMat4("model", model); // 设置模型矩阵
         diamondRenderer.renderDiamond();// 绘制正八面体 
     }
 }

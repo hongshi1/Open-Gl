@@ -6,9 +6,11 @@
 class FlowerRenderer : public ShapeRenderer {
 public:
     FlowerRenderer(int sectors, float radius, float height);
+    ~FlowerRenderer(); // Add destructor
     void render() override;
 
 private:
+    void cleanup(); // Add cleanup method
     int sectors;
     float radius;
     float height;
