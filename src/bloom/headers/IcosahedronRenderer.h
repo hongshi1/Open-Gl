@@ -6,9 +6,11 @@
 class IcosahedronRenderer {
 public:
     IcosahedronRenderer();
+    ~IcosahedronRenderer();
     void renderIcosahedron();
 
 private:
+    void cleanup();
     bool initialized;
     unsigned int icosahedronVAO, icosahedronVBO, icosahedronEBO;
 };

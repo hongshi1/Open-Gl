@@ -1,7 +1,20 @@
 #include "IcosahedronRenderer.h"
 #include <cmath>
 
-IcosahedronRenderer::IcosahedronRenderer() : initialized(false) {}
+IcosahedronRenderer::IcosahedronRenderer() : initialized(false), icosahedronVAO(0), icosahedronVBO(0), icosahedronEBO(0) {}
+
+IcosahedronRenderer::~IcosahedronRenderer() {
+    cleanup();
+}
+
+void IcosahedronRenderer::cleanup() {
+    if (initialized) {
+        glDeleteVertexArrays(1, &icosahedronVAO);
+        glDeleteBuffers(1, &icosahedronVBO);
+        glDeleteBuffers(1, &icosahedronEBO);
+        initialized = false;
+    }
+}
 
 void IcosahedronRenderer::renderIcosahedron() {
     if (!initialized) {
