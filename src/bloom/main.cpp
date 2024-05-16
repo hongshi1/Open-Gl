@@ -107,6 +107,7 @@ int main()
 	Shader shaderBlur("./src/bloom/shader/bloom_blur_vert.glsl", "./src/bloom/shader/bloom_blur_frag.glsl");
 	Shader shaderFinal("./src/bloom/shader/bloom_final_vert.glsl", "./src/bloom/shader/bloom_final_frag.glsl");
 	Shader skyboxShader("./src/bloom/shader/skybox_vert.glsl", "./src/bloom/shader/skybox_frag.glsl");
+	Shader modelShader(" vertex_shader.glsl ", " fragment_shader.glsl");
 
 	// 顶点数组
 	float cubeVertices[] = {
@@ -869,4 +870,22 @@ void setupVertices(void)
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
 	glBufferData(GL_ARRAY_BUFFER, nValues.size() * sizeof(float), &(nValues[0]), GL_STATIC_DRAW);
+
+	// Position attribute
+	glEnableVertexAttribArray(0); // 位置数据链接到位置 0
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
+	// Texture Coordinates attribute
+	glEnableVertexAttribArray(1); // 纹理坐标链接到位置 1
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+
+	// Normal attribute
+	glEnableVertexAttribArray(2); // 法线数据链接到位置 2
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
+	// Unbind the VAO to avoid accidentally modifying it
+	glBindVertexArray(0);
 }
