@@ -26,6 +26,8 @@
 #include "FlowerRenderer.h"
 // 正十二面体
 #include "IcosahedronRenderer.h"
+//模型加载
+#include "Model.h"
 using namespace std;
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
@@ -51,7 +53,7 @@ const unsigned int SCR_HEIGHT = 600;
 Camera camera(glm::vec3(0.0f, 0.0f, 5.0f));
 
 //初始化obj
-ImportedModel hyperCar("./static/model/hyperCar/lamborghini-aventador-pbribl.obj");
+// ImportedModel hyperCar("./static/model/hyperCar/lamborghini-aventador-pbribl.obj");
 // 创建 SphereRenderer 对象
 SphereRenderer sphereRenderer;
 DiamondRenderer diamondRenderer;
@@ -738,7 +740,7 @@ for (int i = 0; i < 8; ++i) {
 }
 
 		//hyperCar
-		setupVertices();
+		// setupVertices();
 
 		// 最后将所有光源显示为明亮的立方体
 		shaderLight.use();
@@ -1445,44 +1447,44 @@ static const int numVBOs = 3;
 GLuint vao[numVAOs] = {0};
 GLuint vbo[numVBOs] = {0};
 	// 加载模型
-void setupVertices(void)
-{
-	vector<glm::vec3> vert = hyperCar.getVertices();
-	vector<glm::vec2> text = hyperCar.getTextureCoords();
-	vector<glm::vec3> norm = hyperCar.getNormals();
+// void setupVertices(void)
+// {
+// 	vector<glm::vec3> vert = hyperCar.getVertices();
+// 	vector<glm::vec2> text = hyperCar.getTextureCoords();
+// 	vector<glm::vec3> norm = hyperCar.getNormals();
 
-	vector<float> pValues;
-	vector<float> tValues;
-	vector<float> nValues;
+// 	vector<float> pValues;
+// 	vector<float> tValues;
+// 	vector<float> nValues;
 
-	for (int i = 0; i < hyperCar.getNumVertices(); i++)
-	{
-		pValues.push_back(vert[i].x);
-		pValues.push_back(vert[i].y);
-		pValues.push_back(vert[i].z);
+// 	for (int i = 0; i < hyperCar.getNumVertices(); i++)
+// 	{
+// 		pValues.push_back(vert[i].x);
+// 		pValues.push_back(vert[i].y);
+// 		pValues.push_back(vert[i].z);
 
-		tValues.push_back(text[i].s);
-		tValues.push_back(text[i].t);
+// 		tValues.push_back(text[i].s);
+// 		tValues.push_back(text[i].t);
 
-		nValues.push_back(norm[i].x);
-		nValues.push_back(norm[i].y);
-		nValues.push_back(norm[i].z);
-	}
+// 		nValues.push_back(norm[i].x);
+// 		nValues.push_back(norm[i].y);
+// 		nValues.push_back(norm[i].z);
+// 	}
 
-	glGenVertexArrays(numVAOs, vao);
-	glBindVertexArray(vao[0]);
+// 	glGenVertexArrays(numVAOs, vao);
+// 	glBindVertexArray(vao[0]);
 
-	glGenBuffers(numVBOs, vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-	glBufferData(GL_ARRAY_BUFFER, pValues.size() * sizeof(float), &(pValues[0]), GL_STATIC_DRAW);
+// 	glGenBuffers(numVBOs, vbo);
+// 	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+// 	glBufferData(GL_ARRAY_BUFFER, pValues.size() * sizeof(float), &(pValues[0]), GL_STATIC_DRAW);
 
-	glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-	glBufferData(GL_ARRAY_BUFFER, tValues.size() * sizeof(float), &(tValues[0]), GL_STATIC_DRAW);
+// 	glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+// 	glBufferData(GL_ARRAY_BUFFER, tValues.size() * sizeof(float), &(tValues[0]), GL_STATIC_DRAW);
 
-	glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
-	glBufferData(GL_ARRAY_BUFFER, nValues.size() * sizeof(float), &(nValues[0]), GL_STATIC_DRAW);
+// 	glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
+// 	glBufferData(GL_ARRAY_BUFFER, nValues.size() * sizeof(float), &(nValues[0]), GL_STATIC_DRAW);
 	
-}
+// }
 
 
 void renderCarpet(Shader& magicCarpetShader, GLuint& woodMap, glm::mat4 projection, glm::mat4 view, float currentTime) {
