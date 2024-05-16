@@ -149,7 +149,8 @@ int main()
 	Model wolf("./static/model/wolf/Wolf_One_obj.obj");
 	Model planet("./static/model/planet/planet.obj");
 	Model duck("./static/model/duck/duck.obj");
-	Model pedestal("./static/model/3D_scifi_pedestal/tech_pedestal.obj");
+	Model pedestal("./static/model/3D_scifi_pedestal/tech_pedestal.obj");	Shader modelShader(" vertex_shader.glsl ", " fragment_shader.glsl");
+
 	// 顶点数组
 	float cubeVertices[] = {
 			// Back face
@@ -1481,6 +1482,7 @@ void setupVertices(void)
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
 	glBufferData(GL_ARRAY_BUFFER, nValues.size() * sizeof(float), &(nValues[0]), GL_STATIC_DRAW);
+	
 }
 
 
