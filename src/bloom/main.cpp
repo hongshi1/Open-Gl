@@ -131,9 +131,11 @@ int main()
 	// glEnable(GL_FRAMEBUFFER_SRGB);
 
 	// 加载模型
-	Model hyperCar1("./static/model/hyperCar1/lamborghini-aventador-pbribl.obj", true);
+	// Model hyperCar1("./static/model/hyperCar1/textures/ImageToStl.com_glbfile.obj", true);
+	Model hyperCar1("./static/model/hyperCar1/textures/ImageToStl.com_glbfile.obj", true);
 	Model hyperCar2("./static/model/hyperCar2/Lamborghini_Veneno_(LP750-4)_Roadster_2014.obj", true);
-	Model F35("./static/model/hyperCar2/F-35.max", true);
+	Model hyperCar3("./static/model/hyperCar3/Lamborghini Aventador SV.obj", true);
+	Model linkStar("./static/model/planet/linked_star.obj");
 
 	// 编译shader
 	// ----------
@@ -156,6 +158,9 @@ int main()
 	Model duck("./static/model/duck/duck.obj");
 	Model pedestal("./static/model/3D_scifi_pedestal/tech_pedestal.obj");
 	Shader modelShader(" vertex_shader.glsl ", " fragment_shader.glsl");
+
+	// 发光效果的参数
+	glm::vec3 glowColor = glm::vec3(0.0f, 0.0f, 1.0f); // 蓝色发光
 
 	// 顶点数组
 	float cubeVertices[] = {
@@ -676,11 +681,19 @@ int main()
 
 		//F-35
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-5.0f, -0.5f, 0.0f));
-		model = glm::scale(model, glm::vec3(5.0f, 5.0f, 5.0f));
+		model = glm::translate(model, glm::vec3(-5.0f, -0.5f, -5.0f));
+		model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
 		model = glm::rotate(model, glm::radians(180.0f), glm::normalize(glm::vec3(0.0, 1.0, 0.0)));
 		shader.setMat4("model", model);
-		F35.Draw(shader);
+		hyperCar3.Draw(shader);
+
+		//旋转物体
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-5.0f, -0.5f, -3.0f));
+		model = glm::scale(model, glm::vec3(0.005f, 0.005f, 0.005f));
+		model = glm::rotate(model, glm::radians(angle), glm::normalize(glm::vec3(0.0, 1.0, 0.0)));
+		shader.setMat4("model", model);
+		linkStar.Draw(shader);
 
 		// 设置透明度
 		float transparency = 0.8; // 设置透明度为50%
@@ -1471,45 +1484,6 @@ static const int numVAOs = 1;
 static const int numVBOs = 3;
 GLuint vao[numVAOs] = {0};
 GLuint vbo[numVBOs] = {0};
-// 加载模型
-// void setupVertices(void)
-// {
-// 	vector<glm::vec3> vert = hyperCar.getVertices();
-// 	vector<glm::vec2> text = hyperCar.getTextureCoords();
-// 	vector<glm::vec3> norm = hyperCar.getNormals();
-
-// 	vector<float> pValues;
-// 	vector<float> tValues;
-// 	vector<float> nValues;
-
-// 	for (int i = 0; i < hyperCar.getNumVertices(); i++)
-// 	{
-// 		pValues.push_back(vert[i].x);
-// 		pValues.push_back(vert[i].y);
-// 		pValues.push_back(vert[i].z);
-
-// 		tValues.push_back(text[i].s);
-// 		tValues.push_back(text[i].t);
-
-// 		nValues.push_back(norm[i].x);
-// 		nValues.push_back(norm[i].y);
-// 		nValues.push_back(norm[i].z);
-// 	}
-
-// 	glGenVertexArrays(numVAOs, vao);
-// 	glBindVertexArray(vao[0]);
-
-// 	glGenBuffers(numVBOs, vbo);
-// 	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-// 	glBufferData(GL_ARRAY_BUFFER, pValues.size() * sizeof(float), &(pValues[0]), GL_STATIC_DRAW);
-
-// 	glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-// 	glBufferData(GL_ARRAY_BUFFER, tValues.size() * sizeof(float), &(tValues[0]), GL_STATIC_DRAW);
-
-// 	glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
-// 	glBufferData(GL_ARRAY_BUFFER, nValues.size() * sizeof(float), &(nValues[0]), GL_STATIC_DRAW);
-
-// }
 
 void renderCarpet(Shader &magicCarpetShader, GLuint &woodMap, glm::mat4 projection, glm::mat4 view, float currentTime)
 {
