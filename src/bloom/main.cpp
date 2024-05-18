@@ -136,6 +136,12 @@ int main()
 	Model hyperCar2("./static/model/hyperCar2/Lamborghini_Veneno_(LP750-4)_Roadster_2014.obj", true);
 	Model hyperCar3("./static/model/hyperCar3/Lamborghini Aventador SV.obj", true);
 	Model linkStar("./static/model/planet/linked_star.obj");
+	Model Mars("./static/model/Mars/Mars 2K.obj");
+	Model Jupiter("./static/model/Jupiter/jupiter.obj");
+	Model venus("./static/model/Venus/venus.obj");
+	Model Neptune("./static/model/Neptune/Neptune.obj");
+	Model Uranus("./static/model/Uranus/Uranus.obj");
+	Model saturn("./static/model/Saturn/13906_Saturn_v1_l3.obj.obj");
 
 	// 编译shader
 	// ----------
@@ -151,6 +157,9 @@ int main()
 
 	Shader bookShader("./src/bloom/shader/book_vert.glsl", "./src/bloom/shader/book_frag.glsl");
 
+	//旋转物体
+	Shader linkStarShader("./src/bloom/shader/vertex_shader.glsl", "./src/bloom/shader/linkStar.glsl");
+
 	// lyy
 	Model skull("./static/model/skull/skull.obj");
 	Model wolf("./static/model/wolf/Wolf_One_obj.obj");
@@ -160,7 +169,7 @@ int main()
 	Shader modelShader(" vertex_shader.glsl ", " fragment_shader.glsl");
 
 	// 发光效果的参数
-	glm::vec3 glowColor = glm::vec3(0.0f, 0.0f, 1.0f); // 蓝色发光
+	glm::vec3 glowColor = glm::vec3(0.0f, 1.0f, 0.0f); // 蓝色发光
 
 	// 顶点数组
 	float cubeVertices[] = {
@@ -476,6 +485,11 @@ int main()
 	bookShader.setInt("normalMap3", 5);
 	bookShader.setInt("texture4", 6);
 
+	//linkStart
+	linkStarShader.use();
+	linkStarShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
+	linkStarShader.setVec3("glowColor", glowColor);
+	linkStarShader.setFloat("glowIntensity", 2.0f);
 	// 渲染循环
 	// --------
 	while (!glfwWindowShouldClose(window))
@@ -487,7 +501,7 @@ int main()
 		// input
 		// -----
 		processInput(window);
-
+                                       
 		// imgui
 		// -----
 		ImGui_ImplOpenGL3_NewFrame();
@@ -679,7 +693,7 @@ int main()
 		shader.setMat4("model", model);
 		hyperCar2.Draw(shader);
 
-		//F-35
+		//
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(-5.0f, -0.5f, -5.0f));
 		model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
@@ -692,8 +706,56 @@ int main()
 		model = glm::translate(model, glm::vec3(-5.0f, -0.5f, -3.0f));
 		model = glm::scale(model, glm::vec3(0.005f, 0.005f, 0.005f));
 		model = glm::rotate(model, glm::radians(angle), glm::normalize(glm::vec3(0.0, 1.0, 0.0)));
+		linkStarShader.setMat4("model", model);
+		linkStar.Draw(linkStarShader);
+
+		//火星
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-5.0f, 10.5f, -3.0f));
+		model = glm::scale(model, glm::vec3(0.3f, 0.3f, 0.3f));
+		model = glm::rotate(model, glm::radians(angle/10), glm::normalize(glm::vec3(0.0, 1.0, 0.0)));
 		shader.setMat4("model", model);
-		linkStar.Draw(shader);
+		Mars.Draw(shader);
+
+		//木星
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(0.0f, 10.5f, -3.0f));
+		model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+		model = glm::rotate(model, glm::radians(angle / 10), glm::normalize(glm::vec3(0.0, 1.0, 0.0)));
+		shader.setMat4("model", model);
+		Jupiter.Draw(shader);
+
+		//金星
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(3.0f, 10.5f, -3.0f));
+		model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+		model = glm::rotate(model, glm::radians(angle / 10), glm::normalize(glm::vec3(0.0, 1.0, 0.0)));
+		shader.setMat4("model", model);
+		venus.Draw(shader);
+
+		//海王星
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(6.0f, 10.5f, -3.0f));
+		model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+		model = glm::rotate(model, glm::radians(angle / 10), glm::normalize(glm::vec3(0.0, 1.0, 0.0)));
+		shader.setMat4("model", model);
+		Neptune.Draw(shader);
+
+		//天王星
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(10.0f, 10.5f, -3.0f));
+		model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+		model = glm::rotate(model, glm::radians(angle / 10), glm::normalize(glm::vec3(0.0, 1.0, 0.0)));
+		shader.setMat4("model", model);
+		Uranus.Draw(shader);
+
+		//土星
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(14.0f, 10.5f, -3.0f));
+		model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+		model = glm::rotate(model, glm::radians(angle / 10), glm::normalize(glm::vec3(0.0, 1.0, 0.0)));
+		shader.setMat4("model", model);
+		saturn.Draw(shader);
 
 		// 设置透明度
 		float transparency = 0.8; // 设置透明度为50%
