@@ -26,6 +26,10 @@
 #include "FlowerRenderer.h"
 // 正十二面体
 #include "IcosahedronRenderer.h"
+// 粒子系统
+#include "ParticleSystem.h"
+// 圆台
+#include "FrustumRenderer.h"
 using namespace std;
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
@@ -40,10 +44,14 @@ void renderQuad();
 void renderCube();
 void renderBook();
 void setupVertices();
-// 绘制形状
+// 绘制点云球
 void renderSphereByPointCloud();
+//点云兔子
 void renderBunnyByPointCloud();
+//发光的平面花
 void renderFlowerByPointCloud(float);
+// 组合物体的数组
+std::vector<glm::vec3> createVertices(float spacing, float scale, const glm::vec3& offset);
 
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
@@ -52,8 +60,9 @@ Camera camera(glm::vec3(0.0f, 0.0f, 5.0f));
 
 // 初始化obj
 //  ImportedModel hyperCar("./static/model/hyperCar/lamborghini-aventador-pbribl.obj");
-// 创建 SphereRenderer 对象
+// 创建 mesh球体
 SphereRenderer sphereRenderer;
+// 创建正八面体
 DiamondRenderer diamondRenderer;
 // 创建圆锥体渲染器
 // ConeRenderer cone(36, 0.5f, 1.0f);
@@ -61,6 +70,13 @@ DiamondRenderer diamondRenderer;
 FlowerRenderer flower(36, 0.5f, 1.0f);
 // 创建正十二面体渲染器
 IcosahedronRenderer icosahedronRenderer;
+// 创建圆台
+int sectors = 36;
+float bottomRadius = 1.3f;
+float topRadius = 1.0f;
+float height = 0.3f * topRadius;
+FrustumRenderer frustum(sectors, bottomRadius, topRadius, height);
+//备注：粒子系统的对象在main函数里面创建
 
 float deltaTime = 0.0f; // 当前帧与上一帧之间的时间差
 float lastTime = 0.0f;	// 上一帧的时间
@@ -146,6 +162,8 @@ int main()
 	Shader magicCarpetShader("./src/bloom/shader/magic_carpet_vert.glsl", "./src/bloom/shader/magic_carpet_frag.glsl");
 	// 针对点云的shader
 	Shader pointCloudShader("./src/bloom/shader/model_sphere_vert.glsl", "./src/bloom/shader/model_sphere_frag.glsl");
+	// 水晶球的shader
+	Shader crystalShader("./src/bloom/shader/crystal_vert.glsl", "./src/bloom/shader/crystal_frag.glsl");
 
 	Shader bookShader("./src/bloom/shader/book_vert.glsl", "./src/bloom/shader/book_frag.glsl");
 
@@ -156,6 +174,10 @@ int main()
 	Model duck("./static/model/duck/duck.obj");
 	Model pedestal("./static/model/3D_scifi_pedestal/tech_pedestal.obj");
 	Shader modelShader(" vertex_shader.glsl ", " fragment_shader.glsl");
+
+	//粒子系统-dcy
+	ParticleSystem particleSystem;
+	particleSystem.initialize();
 
 	// 顶点数组
 	float cubeVertices[] = {
@@ -247,7 +269,7 @@ int main()
 		-1.0f, -1.0f, 1.0f,
 		1.0f, -1.0f, 1.0f};
 
-	// 绘制星星形状
+	// 绘制组合正八面体
 	float scale = 0.1f;	  // 缩放因子
 	float spacing = 0.3f; // 间隔
 
@@ -349,7 +371,18 @@ int main()
 		"./static/texture/skyboxq/py.png",
 		"./static/texture/skyboxq/pz.png",
 	};
+	// 全是白色星星的
+	// vector<std::string> faces{
+	// 	"./static/texture/skybox/right.bmp",
+	// 	"./static/texture/skybox/left.bmp",
+	// 	"./static/texture/skybox/top.bmp",
+	// 	"./static/texture/skybox/bottom.bmp",
+	// 	"./static/texture/skybox/front.bmp",
+	// 	"./static/texture/skybox/back.bmp",
+	// };
 	unsigned int cubemapTexture = loadCubemap(faces);
+
+	//unsigned int cubemapTexture = loadCubemap(faces);
 
 	// 创建imgui上下文
 	// ---------------
@@ -439,7 +472,8 @@ int main()
 	lightPositions.push_back(glm::vec3(3.0f, 0.5f, 1.0f));
 	lightPositions.push_back(glm::vec3(-.8f, 2.4f, -1.0f));
 	// 点云球的球心
-	lightPositions.push_back(glm::vec3(6.0f, 0.0f, 0.0));
+	lightPositions.push_back(glm::vec3(10.0f, 1.0f, 0.0f));
+	
 	// colors
 	vector<glm::vec3> lightColors;
 	lightColors.push_back(glm::vec3(5.0f, 5.0f, 5.0f));
@@ -476,6 +510,7 @@ int main()
 	while (!glfwWindowShouldClose(window))
 	{
 		float currentFrame = glfwGetTime();
+		// 帧时间
 		deltaTime = currentFrame - lastTime;
 		lastTime = currentFrame;
 
@@ -584,11 +619,17 @@ int main()
 		shader.setMat4("model", model);
 		renderCube();
 
-		// model = glm::mat4(1.0f);
-		// model = glm::translate(model, glm::vec3(-3.0f, 0.0f, 0.0));
-		// model = glm::scale(model, glm::vec3(0.5f));
-		// shader.setMat4("model", model);
-		// renderCube();
+		
+		crystalShader.use();
+		crystalShader.setMat4("model", model);
+		crystalShader.setMat4("view", view);
+		crystalShader.setMat4("projection", projection);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-3.0f, 0.0f, 0.0));
+		model = glm::scale(model, glm::vec3(0.5f));
+		shader.setMat4("model", model);
+		sphereRenderer.renderSphere();
 
 		// book
 		glActiveTexture(GL_TEXTURE0);
@@ -653,7 +694,7 @@ int main()
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(-1.5f, 2.5f, 2.0f));
 		model = glm::scale(model, glm::vec3(0.02f, 0.02f, 0.02f));
-		model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
+		model = glm::rotate(model, glm::radians(0.0f), glm::normalize(glm::vec3(6.0, 0.0, 0.0)));
 		shader.setMat4("model", model);
 		pedestal.Draw(shader);
 
@@ -704,31 +745,69 @@ int main()
 		pointCloudShader.setMat4("projection", projection);
 		pointCloudShader.setMat4("view", view);
 
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(5.0f, 0.0f, 0.0));
-		model = glm::scale(model, glm::vec3(1.0f));
-		pointCloudShader.setMat4("model", model);
-
 		// 启用混合功能
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+		// 纹理透明球
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(10.0f, 1.0f,-5.0f));
+		model = glm::scale(model, glm::vec3(2.0f));
+		pointCloudShader.setMat4("model", model);
 		// 渲染球体
 		sphereRenderer.renderSphere();
+
+		// 透明圆台--点云球
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(10.0f, -0.5f, 0.0f));
+		model = glm::scale(model, glm::vec3(1.0f));
+		pointCloudShader.setMat4("model", model);
+		frustum.render();
+		// 透明圆台--粒子系统
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(13.0f, -0.5f, 5.5f));
+		model = glm::scale(model, glm::vec3(1.0f));
+		pointCloudShader.setMat4("model", model);
+		frustum.render();
+
+		// 透明圆台--纹理球(太丑,注释掉)
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(10.0f, -0.5f, -5.0f));
+		model = glm::scale(model, glm::vec3(1.0f));
+		pointCloudShader.setMat4("model", model);
+		frustum.render();
 
 		// 关闭混合功能
 		glDisable(GL_BLEND);
 
-		// 根据点云绘制球体
+		// 点云绘制球体
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(6.0f, 0.0f, 0.0));
+		model = glm::translate(model, glm::vec3(10.0f, 1.0f, 0.0f));
 		// 绕 y 轴旋转
 		model = glm::rotate(model, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
-		model = glm::scale(model, glm::vec3(1.0f));
-		pointCloudShader.setMat4("model", model);
-		renderSphereByPointCloud();
-		// 绘制花朵点云
+		model = glm::rotate(model, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 1.0f)); // 绕 X 轴旋转 90 度
+		model = glm::scale(model, glm::vec3(1.5f));		
+    	pointCloudShader.setMat4("model", model);
+		// 设置点的大小
+		glPointSize(3.0f); // Adjust the size as needed
+    	renderSphereByPointCloud();		
+
+		// 粒子系统绘制球体
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(13.0f, 2.0f, 5.5f));
+		// 绕 y 轴旋转
+		//model = glm::rotate(model, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
+		model = glm::rotate(model, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 1.0f)); // 绕 X 轴旋转 90 度
+		model = glm::scale(model, glm::vec3(0.4f));		
+		particleSystem.update(deltaTime);   
+    	pointCloudShader.setMat4("model", model);
+		// 设置点的大小
+		glPointSize(1.3f); // Adjust the size as needed
+		particleSystem.render();
+		
+		// 绘制正二十面体
 		// icosahedronRenderer.renderIcosahedron();
+		
 
 		// 更新旋转角度
 		angle += rotationSpeed * deltaTime; // deltaTime是上一帧到当前帧的时间间隔
@@ -757,7 +836,6 @@ int main()
 				model = glm::translate(model, position);		 // 设置位置
 				model = glm::scale(model, glm::vec3(scale * 2)); // 设置缩放
 				model = glm::rotate(model, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
-
 				pointCloudShader.setMat4("model", model); // 设置模型矩阵
 				diamondRenderer.renderDiamond();		  // 绘制正八面体
 			}
@@ -776,10 +854,13 @@ int main()
 			{
 				model = glm::mat4(1.0f);
 				model = glm::translate(model, glm::vec3(lightPositions[i]));
-				model = glm::scale(model, glm::vec3(0.25f));
+				model = glm::scale(model, glm::vec3(0.5f));
 				shaderLight.setMat4("model", model);
-				shaderLight.setVec3("lightColor", lightColors[i]); // 设置光源颜色
-																   // sphereRenderer.renderSphere();
+				shaderLight.setVec3("lightColor", lightColors[i]); 
+
+				// 设置光源颜色
+				// sphereRenderer.renderSphere();
+
 				//  绘制圆锥体
 				flower.render();
 			}
@@ -793,6 +874,16 @@ int main()
 				renderCube();
 			}
 		}
+
+		// 圆台代码
+		// model = glm::mat4(1.0f);
+		// model = glm::translate(model, glm::vec3(6.0f,1.5f,0.0f) );
+		// //model = glm::scale(model, glm::vec3(0.25f));
+		// shaderLight.setMat4("model", model);
+		// shaderLight.setVec3("lightColor", glm::vec3(2.0f,2.0f,2.0f));
+		// // 设置光源颜色		
+		// // Render the frustum
+        // frustum.render();
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 		// 2. 通过两次高斯模糊来模糊明亮的片元
@@ -975,67 +1066,7 @@ void renderWater(Shader &waterShader, unsigned int normalTexture, unsigned int n
 	glBindVertexArray(0);
 }
 
-void renderFlowerByPointCloud(float openness)
-{
-	static bool initialized = false;
-	static unsigned int lilyVAO, lilyVBO;
-	const int numPetals = 6;	   // 百合花瓣数量
-	const int pointsPerPetal = 50; // 每个花瓣的点数
-
-	if (!initialized)
-	{
-		// 生成百合花点云
-		std::vector<glm::vec3> points;
-		for (int i = 0; i < numPetals; ++i)
-		{
-			float angle = i * (2.0f * glm::pi<float>()) / numPetals;
-			for (int j = 0; j <= pointsPerPetal; ++j)
-			{
-				float phi = (static_cast<float>(j) / pointsPerPetal) * glm::pi<float>();
-				float r = 1.0f + openness * sin(2 * phi); // 开合效果，调整半径
-				float x = r * cos(angle) * sin(phi);
-				float y = r * sin(angle) * sin(phi);
-				float z = r * cos(phi);
-
-				// 将花瓣旋转使花心朝上
-				float theta = glm::pi<float>() / 2.0f;
-				float newX = x * cos(theta) - z * sin(theta);
-				float newZ = x * sin(theta) + z * cos(theta);
-
-				points.push_back(glm::vec3(newX, y, newZ));
-			}
-		}
-
-		// 生成并绑定缓冲区对象
-		glGenVertexArrays(1, &lilyVAO);
-		glGenBuffers(1, &lilyVBO);
-
-		// 设置点的大小
-		glPointSize(5.0f); // 调整点的大小
-
-		// 绑定顶点数组对象
-		glBindVertexArray(lilyVAO);
-
-		// 绑定并填充顶点缓冲区
-		glBindBuffer(GL_ARRAY_BUFFER, lilyVBO);
-		glBufferData(GL_ARRAY_BUFFER, points.size() * sizeof(glm::vec3), points.data(), GL_STATIC_DRAW);
-
-		// 设置顶点属性指针
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void *)0); // 位置
-		glEnableVertexAttribArray(0);
-
-		// 解绑顶点数组对象
-		glBindVertexArray(0);
-
-		initialized = true;
-	}
-
-	// 渲染百合花点云
-	glBindVertexArray(lilyVAO);
-	glDrawArrays(GL_POINTS, 0, numPetals * (pointsPerPetal + 1));
-	glBindVertexArray(0);
-}
-
+// 绘制点云球体
 void renderSphereByPointCloud()
 {
 	static bool initialized = false;
@@ -1068,9 +1099,6 @@ void renderSphereByPointCloud()
 		glGenVertexArrays(1, &sphereVAO);
 		glGenBuffers(1, &sphereVBO);
 
-		// Set point size
-		glPointSize(5.0f); // Adjust the size as needed
-
 		// Bind VAO
 		glBindVertexArray(sphereVAO);
 
@@ -1092,6 +1120,58 @@ void renderSphereByPointCloud()
 	glBindVertexArray(sphereVAO);
 	glDrawArrays(GL_POINTS, 0, (sectors + 1) * (stacks + 1));
 	glBindVertexArray(0);
+}
+
+// 设置顶点数组函数
+std::vector<glm::vec3> createVertices(float spacing, float scale, const glm::vec3& offset) {
+    // 顶点数组
+    std::vector<glm::vec3> vertices = {
+        // 小立方体的顶点
+        glm::vec3(-spacing, -spacing, -spacing),
+        glm::vec3(spacing, -spacing, -spacing),
+        glm::vec3(-spacing, spacing, -spacing),
+        glm::vec3(spacing, spacing, -spacing),
+        glm::vec3(-spacing, -spacing, spacing),
+        glm::vec3(spacing, -spacing, spacing),
+        glm::vec3(-spacing, spacing, spacing),
+        glm::vec3(spacing, spacing, spacing),
+        // 大立方体的顶点
+        glm::vec3(-spacing * 1.1, -spacing * 1.1, -spacing * 1.1),
+        glm::vec3(spacing * 1.1, -spacing * 1.1, -spacing * 1.1),
+        glm::vec3(-spacing * 1.1, spacing * 1.1, -spacing * 1.1),
+        glm::vec3(spacing * 1.1, spacing * 1.1, -spacing * 1.1),
+        glm::vec3(-spacing * 1.1, -spacing * 1.1, spacing * 1.1),
+        glm::vec3(spacing * 1.1, -spacing * 1.1, spacing * 1.1),
+        glm::vec3(-spacing * 1.1, spacing * 1.1, spacing * 1.1),
+        glm::vec3(spacing * 1.1, spacing * 1.1, spacing * 1.1),
+        // 面心
+        glm::vec3(0.0f, 0.0f, -spacing * 1.1), // 前面中心
+        glm::vec3(0.0f, 0.0f, spacing * 1.1),  // 后面中心
+        glm::vec3(-spacing * 1.1, 0.0f, 0.0f), // 左侧中心
+        glm::vec3(spacing * 1.1, 0.0f, 0.0f),  // 右侧中心
+        glm::vec3(0.0f, -spacing * 1.1, 0.0f), // 下面中心
+        glm::vec3(0.0f, spacing * 1.1, 0.0f),  // 上面中心
+        // 棱心
+        glm::vec3(-spacing * 1.1, 0.0f, -spacing * 1.1), // 前左棱心
+        glm::vec3(-spacing * 1.1, 0.0f, spacing * 1.1),  // 后左棱心
+        glm::vec3(spacing * 1.1, 0.0f, -spacing * 1.1),  // 前右棱心
+        glm::vec3(spacing * 1.1, 0.0f, spacing * 1.1),   // 后右棱心
+        glm::vec3(0.0f, -spacing * 1.1, -spacing * 1.1), // 前下棱心
+        glm::vec3(0.0f, -spacing * 1.1, spacing * 1.1),  // 后下棱心
+        glm::vec3(0.0f, spacing * 1.1, -spacing * 1.1),  // 前上棱心
+        glm::vec3(0.0f, spacing * 1.1, spacing * 1.1),   // 后上棱心
+        glm::vec3(-spacing * 1.1, -spacing * 1.1, 0.0f), // 左下棱心
+        glm::vec3(-spacing * 1.1, spacing * 1.1, 0.0f),  // 左上棱心
+        glm::vec3(spacing * 1.1, -spacing * 1.1, 0.0f),  // 右下棱心
+        glm::vec3(spacing * 1.1, spacing * 1.1, 0.0f)    // 右上棱心
+    };
+
+    // 应用缩放和偏移量
+    for (auto& vertex : vertices) {
+        vertex = vertex * scale + offset;
+    }
+
+    return vertices;
 }
 
 // 测试读取ply文件数据用
