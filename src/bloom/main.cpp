@@ -61,6 +61,10 @@ std::vector<unsigned int> planetTextures;
 std::vector<glm::vec3> starLightPositions;
 std::vector<glm::vec3> initialStarLightPositions;
 
+float lightMovementSpeed = glm::radians(3.0f); // 默认移动速度
+
+
+
 
 
 
@@ -1523,16 +1527,24 @@ void processInput(GLFWwindow *window)
     static bool ctrlPressed = false;    // 用于跟踪 CONTROL 键的状态
     static bool isCtrlToggleOn = false; // 用于控制摄像头移动模式切换
     static float rotationAngle = 0.0f;  // 初始旋转角度
-    static float starRotationSpeed = glm::radians(10.0f); // 调整为每秒10度旋转
+    static float baseStarRotationSpeed = glm::radians(10.0f); // 基本旋转速度
+    static float starRotationSpeed = baseStarRotationSpeed; // 当前旋转速度
 
     // 处理旋转逻辑
     if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
     {
+        starRotationSpeed = glm::radians(20.0f); // 加快旋转速度
         rotationAngle += starRotationSpeed * deltaTime; // 向左旋转
     }
     else if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
     {
+        starRotationSpeed = glm::radians(20.0f); // 加快旋转速度
         rotationAngle -= starRotationSpeed * deltaTime; // 向右旋转
+    }
+    else
+    {
+        starRotationSpeed = baseStarRotationSpeed; // 恢复基本旋转速度
+        rotationAngle += starRotationSpeed * deltaTime; // 基本速度旋转
     }
 
     // 更新光源位置
@@ -1638,6 +1650,7 @@ void processInput(GLFWwindow *window)
 
 
 
+
 unsigned int loadTexture(char const *path, bool gammaCorrection)
 {
 	unsigned int textureID;
@@ -1729,65 +1742,69 @@ static const int numVAOs = 1;
 static const int numVBOs = 3;
 GLuint vao[numVAOs] = {0};
 GLuint vbo[numVBOs] = {0};
-
 void renderCarpet(Shader &magicCarpetShader, GLuint &woodMap, glm::mat4 projection, glm::mat4 view, float currentTime)
 {
-	static GLuint VAO = 0, VBO = 0, EBO = 0;
-	if (VAO == 0)
-	{
-		float magicCarpetVertices[] = {
-			// positions        // texture Coords
-			-6.25f, 0.0f, 2.5f, 0.0f, 0.0f, // 左上
-			6.25f, 0.0f, 2.5f, 1.0f, 0.0f,	// 右上
-			6.25f, 0.0f, -2.5f, 1.0f, 1.0f, // 右下
-			-6.25f, 0.0f, -2.5f, 0.0f, 1.0f // 左下
-		};
+    static GLuint VAO = 0, VBO = 0, EBO = 0;
+    if (VAO == 0)
+    {
+        float magicCarpetVertices[] = {
+            // positions        // texture Coords
+            -6.25f, 0.0f, 2.5f, 0.0f, 0.0f, // 左上
+            6.25f, 0.0f, 2.5f, 1.0f, 0.0f,  // 右上
+            6.25f, 0.0f, -2.5f, 1.0f, 1.0f, // 右下
+            -6.25f, 0.0f, -2.5f, 0.0f, 1.0f // 左下
+        };
 
-		unsigned int indices[] = {
-			0, 1, 2, // 第一个三角形
-			0, 2, 3	 // 第二个三角形
-		};
+        unsigned int indices[] = {
+            0, 1, 2, // 第一个三角形
+            0, 2, 3  // 第二个三角形
+        };
 
-		glGenVertexArrays(1, &VAO);
-		glGenBuffers(1, &VBO);
-		glGenBuffers(1, &EBO);
+        glGenVertexArrays(1, &VAO);
+        glGenBuffers(1, &VBO);
+        glGenBuffers(1, &EBO);
 
-		glBindVertexArray(VAO);
+        glBindVertexArray(VAO);
 
-		glBindBuffer(GL_ARRAY_BUFFER, VBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(magicCarpetVertices), magicCarpetVertices, GL_STATIC_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(magicCarpetVertices), magicCarpetVertices, GL_STATIC_DRAW);
 
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-		// position attribute
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
-		glEnableVertexAttribArray(0);
-		// texture coord attribute
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
-		glEnableVertexAttribArray(1);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
+        glEnableVertexAttribArray(1);
 
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		glBindVertexArray(0);
-	}
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+    }
 
-	magicCarpetShader.use();
-	magicCarpetShader.setMat4("projection", projection);
-	magicCarpetShader.setMat4("view", view);
-	magicCarpetShader.setFloat("time", currentTime);
+    // 启用混合
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	glm::mat4 model = glm::mat4(1.0f);
-	model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f)); // 根据指定位置调整
-	model = glm::scale(model, glm::vec3(7.0f, 0.5f, 4.0f));		 // 确保魔毯尺寸正确
-	magicCarpetShader.setMat4("model", model);
+    magicCarpetShader.use();
+    magicCarpetShader.setMat4("projection", projection);
+    magicCarpetShader.setMat4("view", view);
+    magicCarpetShader.setFloat("time", currentTime);
 
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, woodMap);
-	magicCarpetShader.setInt("texture1", 0);
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f)); // 根据指定位置调整
+    model = glm::scale(model, glm::vec3(7.0f, 0.5f, 4.0f));       // 确保魔毯尺寸正确
+    magicCarpetShader.setMat4("model", model);
 
-	glBindVertexArray(VAO);
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-	glBindVertexArray(0);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, woodMap);
+    magicCarpetShader.setInt("texture1", 0);
+
+    glBindVertexArray(VAO);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    glBindVertexArray(0);
+
+    // 禁用混合
+    glDisable(GL_BLEND);
 }
 
 
