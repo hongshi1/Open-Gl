@@ -40,6 +40,7 @@ void renderQuad();
 void renderCube();
 void renderBook();
 void setupVertices();
+void renderPlanets(const glm::mat4& view, const glm::mat4& projection);
 //绘制形状
 void renderSphereByPointCloud();
 void renderBunnyByPointCloud();
@@ -47,6 +48,9 @@ void renderFlowerByPointCloud(float);
 
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
+std::vector<Planet> planets;
+std::vector<unsigned int> planetTextures;
+Shader planetShader; 
 
 Camera camera(glm::vec3(0.0f, 0.0f, 5.0f));
 
@@ -78,6 +82,32 @@ bool bloomKeyPressed = false;
 bool bloom = true;
 float exposure = 1.0;
 void renderWater(Shader &waterShader, unsigned int normalTexture, unsigned int noiseTexture, unsigned int cubeMapTexture, float deltaTime, glm::vec3 lightPos, glm::vec3 viewPos) ;
+
+#include <string>
+#include <vector>
+
+
+void loadPlanetTextures() {
+    std::vector<std::string> planetFiles = {
+        "./static/texture/solar/earth.png",
+        "./static/texture/solar/mars.png",
+        "./static/texture/solar/neptune.png",
+        "./static/texture/solar/venus.png",
+        "./static/texture/solar/mercury.png",
+        "./static/texture/solar/sun.png"
+    };
+
+    for (const auto& file : planetFiles) {
+        planetTextures.push_back(loadTexture(file.c_str(), false));
+    }
+}
+
+struct Planet {
+    glm::vec3 position;
+    float scale;
+    unsigned int textureID;
+};
+
 
 int main()
 {
@@ -139,6 +169,7 @@ int main()
 	Shader skyboxShader("./src/bloom/shader/skybox_vert.glsl", "./src/bloom/shader/skybox_frag.glsl");
 	Shader waterShader("./src/bloom/shader/water_vert.glsl", "./src/bloom/shader/water_frag.glsl");
 	Shader magicCarpetShader("./src/bloom/shader/magic_carpet_vert.glsl", "./src/bloom/shader/magic_carpet_frag.glsl");
+	Shader planetShader("./src/bloom/shader/planet_vert.glsl", "./src/bloom/shader/planet_frag.glsl");
 	//针对点云的shader
 	Shader pointCloudShader("./src/bloom/shader/model_sphere_vert.glsl", "./src/bloom/shader/model_sphere_frag.glsl");
 
@@ -195,6 +226,17 @@ int main()
 			-0.5f, 0.5f, -0.5f, 0.0f, 1.0f, // top-left
 			-0.5f, 0.5f, 0.5f, 0.0f, 0.0f		// bottom-left
 	};
+
+	planets = {
+        {glm::vec3(0.0f, 0.0f, 0.0f), 3.0f, 0},  // Sun
+        {glm::vec3(5.0f, 0.0f, 0.0f), 0.5f, 1},  // Mercury
+        {glm::vec3(10.0f, 0.0f, 0.0f), 0.95f, 2}, // Venus
+        {glm::vec3(15.0f, 0.0f, 0.0f), 1.0f, 3},  // Earth
+        {glm::vec3(20.0f, 0.0f, 0.0f), 0.53f, 4}, // Mars
+        {glm::vec3(25.0f, 0.0f, 0.0f), 1.5f, 5}   // Neptune
+    };
+
+
 
 	float skyboxVertices[] = {
 			// positions
@@ -562,6 +604,9 @@ int main()
 		// shader.setMat4("model", model);
 		// renderCube();
 
+		
+
+
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(-1.0f, -1.0f, 2.0));
 		model = glm::rotate(model, glm::radians(60.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
@@ -654,6 +699,8 @@ int main()
 		model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
 		shader.setMat4("model", model);
 		pedestal.Draw(shader);
+
+		renderPlanet(lightPos, camera.Position);
 
 
 		// 设置透明度
@@ -1540,4 +1587,118 @@ void renderCarpet(Shader& magicCarpetShader, GLuint& woodMap, glm::mat4 projecti
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
 }
+
+
+
+unsigned int sphereVAO = 0;
+unsigned int indexCount;
+
+void renderSphere()
+{
+    if (sphereVAO == 0)
+    {
+        glGenVertexArrays(1, &sphereVAO);
+
+        unsigned int vbo, ebo;
+        glGenBuffers(1, &vbo);
+        glGenBuffers(1, &ebo);
+
+        std::vector<glm::vec3> positions;
+        std::vector<glm::vec2> uv;
+        std::vector<glm::vec3> normals;
+        std::vector<unsigned int> indices;
+
+        const unsigned int X_SEGMENTS = 64;
+        const unsigned int Y_SEGMENTS = 64;
+        const float PI = 3.14159265359;
+        for (unsigned int x = 0; x <= X_SEGMENTS; ++x)
+        {
+            for (unsigned int y = 0; y <= Y_SEGMENTS; ++y)
+            {
+                float xSegment = (float)x / (float)X_SEGMENTS;
+                float ySegment = (float)y / (float)Y_SEGMENTS;
+                float xPos = std::cos(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
+                float yPos = std::cos(ySegment * PI);
+                float zPos = std::sin(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
+
+                positions.push_back(glm::vec3(xPos, yPos, zPos));
+                uv.push_back(glm::vec2(xSegment, ySegment));
+                normals.push_back(glm::vec3(xPos, yPos, zPos));
+            }
+        }
+
+        bool oddRow = false;
+        for (unsigned int y = 0; y < Y_SEGMENTS; ++y)
+        {
+            if (!oddRow)
+            {
+                for (unsigned int x = 0; x <= X_SEGMENTS; ++x)
+                {
+                    indices.push_back(y * (X_SEGMENTS + 1) + x);
+                    indices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
+                }
+            }
+            else
+            {
+                for (int x = X_SEGMENTS; x >= 0; --x)
+                {
+                    indices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
+                    indices.push_back(y * (X_SEGMENTS + 1) + x);
+                }
+            }
+            oddRow = !oddRow;
+        }
+        indexCount = indices.size();
+
+        std::vector<float> data;
+        for (unsigned int i = 0; i < positions.size(); ++i)
+        {
+            data.push_back(positions[i].x);
+            data.push_back(positions[i].y);
+            data.push_back(positions[i].z);
+            if (!uv.empty())
+            {
+                data.push_back(uv[i].x);
+                data.push_back(uv[i].y);
+            }
+            if (!normals.empty())
+            {
+                data.push_back(normals[i].x);
+                data.push_back(normals[i].y);
+                data.push_back(normals[i].z);
+            }
+        }
+        glBindVertexArray(sphereVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(float), &data[0], GL_STATIC_DRAW);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
+        float stride = (3 + 2 + 3) * sizeof(float);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride, (void*)(3 * sizeof(float)));
+        glEnableVertexAttribArray(2);
+        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, stride, (void*)(5 * sizeof(float)));
+    }
+
+    glBindVertexArray(sphereVAO);
+    glDrawElements(GL_TRIANGLE_STRIP, indexCount, GL_UNSIGNED_INT, 0);
+}
+
+void renderPlanets(const glm::mat4& view, const glm::mat4& projection) {
+    planetShader.use();
+    planetShader.setMat4("view", view);
+    planetShader.setMat4("projection", projection);
+
+    for (const auto& planet : planets) {
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, planet.position);
+        model = glm::scale(model, glm::vec3(planet.scale));
+        planetShader.setMat4("model", model);
+        glBindTexture(GL_TEXTURE_2D, planetTextures[planet.textureID]);
+        sphereRenderer.renderSphere();
+    }
+}
+
 
