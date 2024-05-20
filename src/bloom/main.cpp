@@ -1,6 +1,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include <random>
 #include <map>
 
 #include <tool/shader.h>
@@ -44,8 +45,7 @@ void renderQuad();
 void renderCube();
 void renderBook();
 void setupVertices();
-void renderPlanets(const glm::mat4& view, const glm::mat4& projection);
-//绘制形状
+
 void renderSphereByPointCloud();
 //点云兔子
 void renderBunnyByPointCloud();
@@ -56,11 +56,17 @@ std::vector<glm::vec3> createVertices(float spacing, float scale, const glm::vec
 
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
-std::vector<Planet> planets;
+
 std::vector<unsigned int> planetTextures;
-Shader planetShader; 
+std::vector<glm::vec3> starLightPositions;
+std::vector<glm::vec3> initialStarLightPositions;
+
+
+
 
 Camera camera(glm::vec3(0.0f, 0.0f, 5.0f));
+glm::vec3 lightPos(1.2f, 2.0f, 1.0f); // 初始光源位置
+
 
 // 初始化obj
 //  ImportedModel hyperCar("./static/model/hyperCar/lamborghini-aventador-pbribl.obj");
@@ -198,8 +204,7 @@ int main()
 	Shader skyboxShader("./src/bloom/shader/skybox_vert.glsl", "./src/bloom/shader/skybox_frag.glsl");
 	Shader waterShader("./src/bloom/shader/water_vert.glsl", "./src/bloom/shader/water_frag.glsl");
 	Shader magicCarpetShader("./src/bloom/shader/magic_carpet_vert.glsl", "./src/bloom/shader/magic_carpet_frag.glsl");
-	Shader planetShader("./src/bloom/shader/planet_vert.glsl", "./src/bloom/shader/planet_frag.glsl");
-	//针对点云的shader
+	
 	Shader pointCloudShader("./src/bloom/shader/model_sphere_vert.glsl", "./src/bloom/shader/model_sphere_frag.glsl");
 	// 水晶球的shader
 	Shader crystalShader("./src/bloom/shader/crystal_vert.glsl", "./src/bloom/shader/crystal_frag.glsl");
@@ -267,14 +272,6 @@ int main()
 		-0.5f, 0.5f, 0.5f, 0.0f, 0.0f	// bottom-left
 	};
 
-	planets = {
-        {glm::vec3(0.0f, 0.0f, 0.0f), 3.0f, 0},  // Sun
-        {glm::vec3(5.0f, 0.0f, 0.0f), 0.5f, 1},  // Mercury
-        {glm::vec3(10.0f, 0.0f, 0.0f), 0.95f, 2}, // Venus
-        {glm::vec3(15.0f, 0.0f, 0.0f), 1.0f, 3},  // Earth
-        {glm::vec3(20.0f, 0.0f, 0.0f), 0.53f, 4}, // Mars
-        {glm::vec3(25.0f, 0.0f, 0.0f), 1.5f, 5}   // Neptune
-    };
 
 
 
@@ -448,7 +445,7 @@ int main()
 
 	// 加载贴图
 	// --------
-	unsigned int woodMap = loadTexture("./static/images/b.jpg", false);
+	unsigned int woodMap = loadTexture("./static/images/light.png", false);
 	unsigned int containerMap = loadTexture("./static/texture/container2.png", true);
 	// lyy
 	// book
@@ -526,6 +523,27 @@ int main()
 	lightPositions.push_back(glm::vec3(-.8f, 2.4f, -1.0f));
 	// 点云球的球心
 	lightPositions.push_back(glm::vec3(10.0f, 1.0f, 0.0f));
+
+	
+	vector<glm::vec3> starLightColors;
+
+	std::default_random_engine generator;
+	std::uniform_real_distribution<float> distribution(-1.0f, 1.0f);
+
+	// 在星光源初始化代码中，增加 initialStarLightPositions 初始化
+	for (int i = 0; i < 100; ++i) {
+		float theta = glm::radians(distribution(generator) * 180.0f);
+		float phi = glm::radians(distribution(generator) * 360.0f);
+		float radius = 60.0f + distribution(generator) * 25.0f; // Large sphere radius
+		float x = radius * sin(theta) * cos(phi);
+		float y = radius * sin(theta) * sin(phi);
+		float z = radius * cos(theta);
+
+		starLightPositions.push_back(glm::vec3(x, y, z));
+		initialStarLightPositions.push_back(glm::vec3(x, y, z)); // 初始化初始位置
+		starLightColors.push_back(glm::vec3(distribution(generator) + 1.0f, distribution(generator) + 1.0f, distribution(generator) + 1.0f)); // Random bright colors
+	}
+
 	
 	// colors
 	vector<glm::vec3> lightColors;
@@ -632,6 +650,7 @@ int main()
 
 		shader.use();
 		shader.setMat4("projection", projection);
+		shader.setVec3("lightPos", lightPos);
 		shader.setMat4("view", view);
 		glActiveTexture(GL_TEXTURE0);
 
@@ -839,7 +858,7 @@ int main()
 		model = glm::rotate(model, glm::radians(angle / 10), glm::normalize(glm::vec3(0.0, 1.0, 0.0)));
 		shader.setMat4("model", model);
 		saturn.Draw(shader);
-		renderPlanet(lightPos, camera.Position);
+		// renderPlanet(lightPos, camera.Position);
 
 
 		// 设置透明度
@@ -967,6 +986,15 @@ int main()
 		shaderLight.use();
 		shaderLight.setMat4("projection", projection);
 		shaderLight.setMat4("view", view);
+
+		for (unsigned int i = 0; i < starLightPositions.size(); i++) {
+			glm::mat4 model = glm::mat4(1.0f);
+			model = glm::translate(model, starLightPositions[i]);
+			model = glm::scale(model, glm::vec3(0.5f)); // Adjust the size of the spheres
+			shaderLight.setMat4("model", model);
+			shaderLight.setVec3("lightColor", starLightColors[i]); // Set light color
+			sphereRenderer.renderSphere(); // Render the light as a sphere
+		}
 		for (unsigned int i = 0; i < lightPositions.size(); i++)
 		{
 			if (i == lightPositions.size() - 1)
@@ -1490,95 +1518,126 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 	glViewport(0, 0, width, height);
 }
 
-// 输入监听
 void processInput(GLFWwindow *window)
 {
-	static bool ctrlPressed = false;	// 用于跟踪 CONTROL 键的状态
-	static bool isCtrlToggleOn = false; // 用于控制摄像头移动模式切换
-	// 退出窗口
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-	{
-		glfwSetWindowShouldClose(window, true);
-	}
+    static bool ctrlPressed = false;    // 用于跟踪 CONTROL 键的状态
+    static bool isCtrlToggleOn = false; // 用于控制摄像头移动模式切换
+    static float rotationAngle = 0.0f;  // 初始旋转角度
+    static float starRotationSpeed = glm::radians(10.0f); // 调整为每秒10度旋转
 
-	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS && !ctrlPressed)
-	{
-		isCtrlToggleOn = !isCtrlToggleOn;		  // 切换状态
-		camera.isHorizontalMode = isCtrlToggleOn; // 应用状态到摄像机
-		ctrlPressed = true;
-	}
-	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_RELEASE)
-	{
-		ctrlPressed = false;
-	}
+    // 处理旋转逻辑
+    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+    {
+        rotationAngle += starRotationSpeed * deltaTime; // 向左旋转
+    }
+    else if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+    {
+        rotationAngle -= starRotationSpeed * deltaTime; // 向右旋转
+    }
 
-	// 检查是否按下 SHIFT 键
+    // 更新光源位置
+    glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), rotationAngle, glm::vec3(0.0f, 1.0f, 0.0f));
+    for (unsigned int i = 0; i < starLightPositions.size(); i++)
+    {
+        glm::vec4 newPos = rotationMatrix * glm::vec4(initialStarLightPositions[i], 1.0f);
+        starLightPositions[i] = glm::vec3(newPos);
+    }
 
-	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-	{
-		camera.MovementSpeed = 3.0f;
-	}
-	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE)
-	{
-		camera.MovementSpeed = 1.5f;
-	}
+    // 退出窗口
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+    {
+        glfwSetWindowShouldClose(window, true);
+    }
 
-	// 相机移动
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-	{
-		camera.ProcessKeyboard(FORWARD, deltaTime);
-	}
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-	{
-		camera.ProcessKeyboard(BACKWARD, deltaTime);
-	}
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-	{
-		camera.ProcessKeyboard(LEFT, deltaTime);
-	}
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-	{
-		camera.ProcessKeyboard(RIGHT, deltaTime);
-	}
-	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-	{
-		camera.Jump();
-	}
+    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS && !ctrlPressed)
+    {
+        isCtrlToggleOn = !isCtrlToggleOn;          // 切换状态
+        camera.gravityEnabled = isCtrlToggleOn;    // 应用状态到摄像机
+        ctrlPressed = true;
+    }
+    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_RELEASE)
+    {
+        ctrlPressed = false;
+    }
 
-	// 切换bloom
-	if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS && !bloomKeyPressed)
-	{
-		bloom = !bloom;
-		bloomKeyPressed = true;
-	}
-	if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_RELEASE)
-	{
-		bloomKeyPressed = false;
-	}
+    // 检查是否按下 SHIFT 键
+    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+    {
+        camera.MovementSpeed = 3.0f;
+    }
+    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE)
+    {
+        camera.MovementSpeed = 1.5f;
+    }
 
-	// 曝光度
-	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-	{
+    // 相机移动
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    {
+        camera.ProcessKeyboard(FORWARD, deltaTime);
+    }
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+    {
+        camera.ProcessKeyboard(BACKWARD, deltaTime);
+    }
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+    {
+        camera.ProcessKeyboard(LEFT, deltaTime);
+    }
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+    {
+        camera.ProcessKeyboard(RIGHT, deltaTime);
+    }
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+    {
+        camera.Jump();
+    }
 
-		if (exposure > 0.0f)
-		{
-			exposure -= 0.01f;
-		}
+    // 响应上下方向键
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+    {
+        camera.ProcessKeyboard(UP, deltaTime);
+    }
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+    {
+        camera.ProcessKeyboard(DOWN, deltaTime);
+    }
 
-		else
-			exposure = 0.0f;
-	}
-	else if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
-	{
-		exposure += 0.01f;
-	}
+    // 切换bloom
+    if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS && !bloomKeyPressed)
+    {
+        bloom = !bloom;
+        bloomKeyPressed = true;
+    }
+    if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_RELEASE)
+    {
+        bloomKeyPressed = false;
+    }
 
-	// 将鼠标指针从窗口中施放
-	if (glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS)
-	{
-		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-	}
+    // 曝光度
+    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+    {
+        if (exposure > 0.0f)
+        {
+            exposure -= 0.01f;
+        }
+        else
+            exposure = 0.0f;
+    }
+    else if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+    {
+        exposure += 0.01f;
+    }
+
+    // 将鼠标指针从窗口中释放
+    if (glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS)
+    {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
 }
+
+
+
+
 unsigned int loadTexture(char const *path, bool gammaCorrection)
 {
 	unsigned int textureID;
@@ -1828,20 +1887,3 @@ void renderSphere()
     glBindVertexArray(sphereVAO);
     glDrawElements(GL_TRIANGLE_STRIP, indexCount, GL_UNSIGNED_INT, 0);
 }
-
-void renderPlanets(const glm::mat4& view, const glm::mat4& projection) {
-    planetShader.use();
-    planetShader.setMat4("view", view);
-    planetShader.setMat4("projection", projection);
-
-    for (const auto& planet : planets) {
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, planet.position);
-        model = glm::scale(model, glm::vec3(planet.scale));
-        planetShader.setMat4("model", model);
-        glBindTexture(GL_TEXTURE_2D, planetTextures[planet.textureID]);
-        sphereRenderer.renderSphere();
-    }
-}
-
-
