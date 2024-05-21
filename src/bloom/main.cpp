@@ -31,6 +31,8 @@
 #include "ParticleSystem.h"
 // 圆台
 #include "FrustumRenderer.h"
+// 云雾系统
+#include "CloudRenderer.h"
 using namespace std;
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
@@ -47,12 +49,14 @@ void renderBook();
 void setupVertices();
 
 void renderSphereByPointCloud();
-//点云兔子
+// 点云兔子
 void renderBunnyByPointCloud();
-//发光的平面花
+// 发光的平面花
 void renderFlowerByPointCloud(float);
 // 组合物体的数组
-std::vector<glm::vec3> createVertices(float spacing, float scale, const glm::vec3& offset);
+std::vector<glm::vec3> createVertices(float spacing, float scale, const glm::vec3 &offset);
+// 随机生成粒子
+std::vector<float> generateParticleData(int numParticles, float cloudSize);
 
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
@@ -63,14 +67,8 @@ std::vector<glm::vec3> initialStarLightPositions;
 
 float lightMovementSpeed = glm::radians(3.0f); // 默认移动速度
 
-
-
-
-
-
 Camera camera(glm::vec3(0.0f, 0.0f, 5.0f));
 glm::vec3 lightPos(1.2f, 2.0f, 1.0f); // 初始光源位置
-
 
 // 初始化obj
 //  ImportedModel hyperCar("./static/model/hyperCar/lamborghini-aventador-pbribl.obj");
@@ -90,7 +88,8 @@ float bottomRadius = 1.3f;
 float topRadius = 1.0f;
 float height = 0.3f * topRadius;
 FrustumRenderer frustum(sectors, bottomRadius, topRadius, height);
-//备注：粒子系统的对象在main函数里面创建
+// 备注：粒子系统的对象在main函数里面创建
+bool isFlow = false;
 
 float deltaTime = 0.0f; // 当前帧与上一帧之间的时间差
 float lastTime = 0.0f;	// 上一帧的时间
@@ -107,33 +106,33 @@ bool firstMouse = true;
 bool bloomKeyPressed = false;
 bool bloom = true;
 float exposure = 1.0;
-void renderWater(Shader &waterShader, unsigned int normalTexture, unsigned int noiseTexture, unsigned int cubeMapTexture, float deltaTime, glm::vec3 lightPos, glm::vec3 viewPos) ;
+void renderWater(Shader &waterShader, unsigned int normalTexture, unsigned int noiseTexture, unsigned int cubeMapTexture, float deltaTime, glm::vec3 lightPos, glm::vec3 viewPos);
 
 #include <string>
 #include <vector>
 
+void loadPlanetTextures()
+{
+	std::vector<std::string> planetFiles = {
+		"./static/texture/solar/earth.png",
+		"./static/texture/solar/mars.png",
+		"./static/texture/solar/neptune.png",
+		"./static/texture/solar/venus.png",
+		"./static/texture/solar/mercury.png",
+		"./static/texture/solar/sun.png"};
 
-void loadPlanetTextures() {
-    std::vector<std::string> planetFiles = {
-        "./static/texture/solar/earth.png",
-        "./static/texture/solar/mars.png",
-        "./static/texture/solar/neptune.png",
-        "./static/texture/solar/venus.png",
-        "./static/texture/solar/mercury.png",
-        "./static/texture/solar/sun.png"
-    };
-
-    for (const auto& file : planetFiles) {
-        planetTextures.push_back(loadTexture(file.c_str(), false));
-    }
+	for (const auto &file : planetFiles)
+	{
+		planetTextures.push_back(loadTexture(file.c_str(), false));
+	}
 }
 
-struct Planet {
-    glm::vec3 position;
-    float scale;
-    unsigned int textureID;
+struct Planet
+{
+	glm::vec3 position;
+	float scale;
+	unsigned int textureID;
 };
-
 
 int main()
 {
@@ -197,7 +196,7 @@ int main()
 	Model venus("./static/model/Venus/venus.obj");
 	Model Neptune("./static/model/Neptune/Neptune.obj");
 	Model Uranus("./static/model/Uranus/Uranus.obj");
-	Model saturn("./static/model/Saturn/13906_Saturn_v1_l3.obj.obj");
+	Model saturn("./static/model/Saturn/13906_Saturn_v1_l3.obj");
 
 	// 编译shader
 	// ----------
@@ -208,14 +207,15 @@ int main()
 	Shader skyboxShader("./src/bloom/shader/skybox_vert.glsl", "./src/bloom/shader/skybox_frag.glsl");
 	Shader waterShader("./src/bloom/shader/water_vert.glsl", "./src/bloom/shader/water_frag.glsl");
 	Shader magicCarpetShader("./src/bloom/shader/magic_carpet_vert.glsl", "./src/bloom/shader/magic_carpet_frag.glsl");
-	
+
 	Shader pointCloudShader("./src/bloom/shader/model_sphere_vert.glsl", "./src/bloom/shader/model_sphere_frag.glsl");
+	Shader glodenShader("./src/bloom/shader/model_sphere_vert.glsl", "./src/bloom/shader/model_gloden_frag.glsl");
 	// 水晶球的shader
 	Shader crystalShader("./src/bloom/shader/crystal_vert.glsl", "./src/bloom/shader/crystal_frag.glsl");
 
 	Shader bookShader("./src/bloom/shader/book_vert.glsl", "./src/bloom/shader/book_frag.glsl");
 
-	//旋转物体
+	// 旋转物体
 	Shader linkStarShader("./src/bloom/shader/vertex_shader.glsl", "./src/bloom/shader/linkStar.glsl");
 
 	// lyy
@@ -224,10 +224,23 @@ int main()
 	Model planet("./static/model/planet/planet.obj");
 	Model duck("./static/model/duck/duck.obj");
 	Model pedestal("./static/model/3D_scifi_pedestal/tech_pedestal.obj");
-	Shader modelShader(" vertex_shader.glsl ", " fragment_shader.glsl");
-	//粒子系统-dcy
+	Model tech_duck("./static/model/3D_scifi_pedestal/tech_pedestal.obj");
+	Model tech_wolf("./static/model/3D_scifi_pedestal/tech_pedestal.obj");
+	Model tech_skull("./static/model/3D_scifi_pedestal/tech_pedestal.obj");
+	Model tech_car1("./static/model/3D_scifi_pedestal/tech_pedestal.obj");
+	Model tech_car2("./static/model/3D_scifi_pedestal/tech_pedestal.obj");
+	Model tech_car3("./static/model/3D_scifi_pedestal/tech_pedestal.obj");
+
+	// 粒子系统-dcy
 	ParticleSystem particleSystem;
 	particleSystem.initialize();
+	// 效果
+	//  云雾对象
+	//  创建 CloudRenderer 对象并设置参数
+	CloudRenderer cloudRenderer; // 创建一个包含 1000 个粒子的 CloudRenderer 对象
+								 // cloudRenderer.setFlowSpeed(1.0f); // 设置粒子的流动速度
+								 // cloudRenderer.setFlowDirection(glm::vec3(0.0f, 1.0f, 0.0f)); // 设置粒子的流动方向
+
 	// 发光效果的参数
 	glm::vec3 glowColor = glm::vec3(0.0f, 1.0f, 0.0f); // 蓝色发光
 	// 顶点数组
@@ -275,9 +288,6 @@ int main()
 		-0.5f, 0.5f, -0.5f, 0.0f, 1.0f, // top-left
 		-0.5f, 0.5f, 0.5f, 0.0f, 0.0f	// bottom-left
 	};
-
-
-
 
 	float skyboxVertices[] = {
 		// positions
@@ -417,26 +427,28 @@ int main()
 	// 		"./static/texture/skyboxq/pz.png",
 
 	// 		};
+
+	// 备注：这是5-21周二之前有缝隙的一版
 	vector<std::string> faces{
-		"./static/texture/skyboxq/ny.png",
-		"./static/texture/skyboxq/nx.png",
-		"./static/texture/skyboxq/nz.png",
 		"./static/texture/skyboxq/px.png",
-		"./static/texture/skyboxq/py.png",
+		"./static/texture/skyboxq/nx.png",
 		"./static/texture/skyboxq/pz.png",
+		"./static/texture/skyboxq/nz.png",
+		"./static/texture/skyboxq/ny.png",
+		"./static/texture/skyboxq/py.png",
 	};
 	// 全是白色星星的
-	// vector<std::string> faces{
-	// 	"./static/texture/skybox/right.bmp",
-	// 	"./static/texture/skybox/left.bmp",
-	// 	"./static/texture/skybox/top.bmp",
-	// 	"./static/texture/skybox/bottom.bmp",
-	// 	"./static/texture/skybox/front.bmp",
-	// 	"./static/texture/skybox/back.bmp",
-	// };
+	/* vector<std::string> faces{
+		"./static/texture/subskybox/right.bmp",
+		"./static/texture/subskybox/left.bmp",
+		"./static/texture/subskybox/top.bmp",
+		"./static/texture/subskybox/bottom.bmp",
+		"./static/texture/subskybox/front.bmp",
+		"./static/texture/subskybox/back.bmp",
+	}; */
 	unsigned int cubemapTexture = loadCubemap(faces);
 
-	//unsigned int cubemapTexture = loadCubemap(faces);
+	// unsigned int cubemapTexture = loadCubemap(faces);
 
 	// 创建imgui上下文
 	// ---------------
@@ -528,14 +540,14 @@ int main()
 	// 点云球的球心
 	lightPositions.push_back(glm::vec3(10.0f, 1.0f, 0.0f));
 
-	
 	vector<glm::vec3> starLightColors;
 
 	std::default_random_engine generator;
 	std::uniform_real_distribution<float> distribution(-1.0f, 1.0f);
 
 	// 在星光源初始化代码中，增加 initialStarLightPositions 初始化
-	for (int i = 0; i < 100; ++i) {
+	for (int i = 0; i < 100; ++i)
+	{
 		float theta = glm::radians(distribution(generator) * 180.0f);
 		float phi = glm::radians(distribution(generator) * 360.0f);
 		float radius = 60.0f + distribution(generator) * 25.0f; // Large sphere radius
@@ -544,11 +556,10 @@ int main()
 		float z = radius * cos(theta);
 
 		starLightPositions.push_back(glm::vec3(x, y, z));
-		initialStarLightPositions.push_back(glm::vec3(x, y, z)); // 初始化初始位置
+		initialStarLightPositions.push_back(glm::vec3(x, y, z));																			  // 初始化初始位置
 		starLightColors.push_back(glm::vec3(distribution(generator) + 1.0f, distribution(generator) + 1.0f, distribution(generator) + 1.0f)); // Random bright colors
 	}
 
-	
 	// colors
 	vector<glm::vec3> lightColors;
 	lightColors.push_back(glm::vec3(5.0f, 5.0f, 5.0f));
@@ -580,7 +591,7 @@ int main()
 	bookShader.setInt("normalMap3", 5);
 	bookShader.setInt("texture4", 6);
 
-	//linkStart
+	// linkStart
 	linkStarShader.use();
 	linkStarShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
 	linkStarShader.setVec3("glowColor", glowColor);
@@ -597,7 +608,7 @@ int main()
 		// input
 		// -----
 		processInput(window);
-                                       
+
 		// imgui
 		// -----
 		ImGui_ImplOpenGL3_NewFrame();
@@ -668,12 +679,12 @@ int main()
 		// 创建一个大的立方体作为地板
 
 		// 创建多个立方体作为物体
-		glBindTexture(GL_TEXTURE_2D, containerMap);
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.0f, 1.0f, 0.0f));
-		model = glm::scale(model, glm::vec3(0.5f));
-		shader.setMat4("model", model);
-		renderCube();
+		// glBindTexture(GL_TEXTURE_2D, containerMap);
+		// model = glm::mat4(1.0f);
+		// model = glm::translate(model, glm::vec3(0.0f, 1.0f, 0.0f));
+		// model = glm::scale(model, glm::vec3(0.5f));
+		// shader.setMat4("model", model);
+		// renderCube();
 
 		// model = glm::mat4(1.0f);
 		// model = glm::translate(model, glm::vec3(2.0f, 0.0f, 1.0));
@@ -681,29 +692,25 @@ int main()
 		// shader.setMat4("model", model);
 		// renderCube();
 
-		
+		// model = glm::mat4(1.0f);
+		// model = glm::translate(model, glm::vec3(-1.0f, -1.0f, 2.0));
+		// model = glm::rotate(model, glm::radians(60.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
+		// shader.setMat4("model", model);
+		// renderCube();
 
+		// model = glm::mat4(1.0f);
+		// model = glm::translate(model, glm::vec3(0.0f, 2.7f, 4.0));
+		// model = glm::rotate(model, glm::radians(23.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
+		// model = glm::scale(model, glm::vec3(1.25));
+		// shader.setMat4("model", model);
+		// renderCube();
 
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-1.0f, -1.0f, 2.0));
-		model = glm::rotate(model, glm::radians(60.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
-		shader.setMat4("model", model);
-		renderCube();
+		// model = glm::mat4(1.0f);
+		// model = glm::translate(model, glm::vec3(-2.0f, 1.0f, -3.0));
+		// model = glm::rotate(model, glm::radians(124.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
+		// shader.setMat4("model", model);
+		// renderCube();
 
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.0f, 2.7f, 4.0));
-		model = glm::rotate(model, glm::radians(23.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
-		model = glm::scale(model, glm::vec3(1.25));
-		shader.setMat4("model", model);
-		renderCube();
-
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-2.0f, 1.0f, -3.0));
-		model = glm::rotate(model, glm::radians(124.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
-		shader.setMat4("model", model);
-		renderCube();
-
-		
 		crystalShader.use();
 		crystalShader.setMat4("model", model);
 		crystalShader.setMat4("view", view);
@@ -745,15 +752,23 @@ int main()
 		shader.use();
 		// skull
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(2.0f, -0.5f, -0.5f)); // translate it down so it's at the center of the scene
+		model = glm::translate(model, glm::vec3(-1.0f, -0.3f, 3.0f)); // translate it down so it's at the center of the scene
 		model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
 		model = glm::scale(model, glm::vec3(0.06f, 0.06f, 0.06f)); // it's a bit too big for our scene, so scale it down
 		shader.setMat4("model", model);
 		skull.Draw(shader);
 
+		// tech_skull
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-1.0f, -0.5f, 3.0f)); // translate it down so it's at the center of the scene
+		// model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
+		model = glm::scale(model, glm::vec3(0.06f, 0.06f, 0.06f)); // it's a bit too big for our scene, so scale it down
+		shader.setMat4("model", model);
+		tech_skull.Draw(shader);
+
 		// planet
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(2.0f, 0.0f, 3.0f)); // translate it down so it's at the center of the scene
+		model = glm::translate(model, glm::vec3(2.0f, 10.5f, 3.0f)); // translate it down so it's at the center of the scene
 		model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
 		model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f)); // it's a bit too big for our scene, so scale it down
 		shader.setMat4("model", model);
@@ -761,22 +776,38 @@ int main()
 
 		// wolf
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(2.0f, -0.5f, 2.0f)); // translate it down so it's at the center of the scene
+		model = glm::translate(model, glm::vec3(-3.0f, -0.3f, 3.0f)); // translate it down so it's at the center of the scene
 		model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
 		shader.setMat4("model", model);
 		wolf.Draw(shader);
 
+		// tech_wolf
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-3.0f, -0.5f, 3.0f)); // translate it down so it's at the center of the scene
+		// model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
+		model = glm::scale(model, glm::vec3(0.06f, 0.06f, 0.06f)); // it's a bit too big for our scene, so scale it down
+		shader.setMat4("model", model);
+		tech_wolf.Draw(shader);
+
 		// duck
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-1.5f, -0.5f, 4.0f)); // translate it down so it's at the center of the scene
+		model = glm::translate(model, glm::vec3(-5.0f, -0.3f, 3.0f)); // translate it down so it's at the center of the scene
 		model = glm::scale(model, glm::vec3(0.02f, 0.02f, 0.02f));
 		model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
 		shader.setMat4("model", model);
 		duck.Draw(shader);
 
+		// tech_duck
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-5.0f, -0.5f, 3.0f)); // translate it down so it's at the center of the scene
+		// model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
+		model = glm::scale(model, glm::vec3(0.06f, 0.06f, 0.06f)); // it's a bit too big for our scene, so scale it down
+		shader.setMat4("model", model);
+		tech_duck.Draw(shader);
+
 		// pedestal
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-1.5f, 2.5f, 2.0f));
+		model = glm::translate(model, glm::vec3(-1.5f, 0.0f, 3.0f));
 		model = glm::scale(model, glm::vec3(0.02f, 0.02f, 0.02f));
 		model = glm::rotate(model, glm::radians(0.0f), glm::normalize(glm::vec3(6.0, 0.0, 0.0)));
 		shader.setMat4("model", model);
@@ -784,30 +815,54 @@ int main()
 
 		// hyper1
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-5.0f, -0.5f, 0.0f));
-		model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
-		model = glm::rotate(model, glm::radians(180.0f), glm::normalize(glm::vec3(0.0, 1.0, 0.0)));
+		model = glm::translate(model, glm::vec3(12.0f, -0.3f, 1.0f));
+		model = glm::scale(model, glm::vec3(0.02f, 0.02f, 0.02f));
+		model = glm::rotate(model, glm::radians(angle / 10), glm::normalize(glm::vec3(0.0, 1.0, 0.0)));
 		shader.setMat4("model", model);
 		hyperCar1.Draw(shader);
 
-		//hyper2
+		// tech_car1
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-5.0f, -0.5f, 5.0f));
+		model = glm::translate(model, glm::vec3(12.0f, -0.5f, 1.0f)); // translate it down so it's at the center of the scene
+		// model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
+		model = glm::scale(model, glm::vec3(0.06f, 0.06f, 0.06f)); // it's a bit too big for our scene, so scale it down
+		shader.setMat4("model", model);
+		tech_car1.Draw(shader);
+
+		// hyper2
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(10.0f, -0.3f, 1.0f));
 		model = glm::scale(model, glm::vec3(0.005f, 0.005f, 0.005f));
 		model = glm::rotate(model, glm::radians(180.0f), glm::normalize(glm::vec3(0.0, 1.0, 0.0)));
 		model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
 		shader.setMat4("model", model);
 		hyperCar2.Draw(shader);
 
+		// tech_car2
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(10.0f, -0.5f, 1.0f)); // translate it down so it's at the center of the scene
+		// model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
+		model = glm::scale(model, glm::vec3(0.06f, 0.06f, 0.06f)); // it's a bit too big for our scene, so scale it down
+		shader.setMat4("model", model);
+		tech_car2.Draw(shader);
+
 		//
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-5.0f, -0.5f, -5.0f));
+		model = glm::translate(model, glm::vec3(7.0f, -0.3f, 1.0f));
 		model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
-		model = glm::rotate(model, glm::radians(180.0f), glm::normalize(glm::vec3(0.0, 1.0, 0.0)));
+		model = glm::rotate(model, glm::radians(0.0f), glm::normalize(glm::vec3(0.0, 1.0, 0.0)));
 		shader.setMat4("model", model);
 		hyperCar3.Draw(shader);
 
-		//旋转物体
+		// tech_car3
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(7.0f, -0.5f, 1.0f)); // translate it down so it's at the center of the scene
+		// model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
+		model = glm::scale(model, glm::vec3(0.06f, 0.06f, 0.06f)); // it's a bit too big for our scene, so scale it down
+		shader.setMat4("model", model);
+		tech_car3.Draw(shader);
+
+		// 旋转物体
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(-5.0f, -0.5f, -3.0f));
 		model = glm::scale(model, glm::vec3(0.005f, 0.005f, 0.005f));
@@ -815,15 +870,15 @@ int main()
 		linkStarShader.setMat4("model", model);
 		linkStar.Draw(linkStarShader);
 
-		//火星
+		// 火星
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(-5.0f, 10.5f, -3.0f));
 		model = glm::scale(model, glm::vec3(0.3f, 0.3f, 0.3f));
-		model = glm::rotate(model, glm::radians(angle/10), glm::normalize(glm::vec3(0.0, 1.0, 0.0)));
+		model = glm::rotate(model, glm::radians(angle / 10), glm::normalize(glm::vec3(0.0, 1.0, 0.0)));
 		shader.setMat4("model", model);
 		Mars.Draw(shader);
 
-		//木星
+		// 木星
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(0.0f, 10.5f, -3.0f));
 		model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
@@ -831,7 +886,7 @@ int main()
 		shader.setMat4("model", model);
 		Jupiter.Draw(shader);
 
-		//金星
+		// 金星
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(3.0f, 10.5f, -3.0f));
 		model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
@@ -839,7 +894,7 @@ int main()
 		shader.setMat4("model", model);
 		venus.Draw(shader);
 
-		//海王星
+		// 海王星
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(6.0f, 10.5f, -3.0f));
 		model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
@@ -847,7 +902,7 @@ int main()
 		shader.setMat4("model", model);
 		Neptune.Draw(shader);
 
-		//天王星
+		// 天王星
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(10.0f, 10.5f, -3.0f));
 		model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
@@ -855,7 +910,7 @@ int main()
 		shader.setMat4("model", model);
 		Uranus.Draw(shader);
 
-		//土星
+		// 土星
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(14.0f, 10.5f, -3.0f));
 		model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
@@ -864,36 +919,52 @@ int main()
 		saturn.Draw(shader);
 		// renderPlanet(lightPos, camera.Position);
 
+		// 使用着色器程序
+		glodenShader.use();
+		// 设置uniform变量
+		glodenShader.setVec3("viewPos", camera.Position); // 设置视点位置
+		glodenShader.setFloat("rimIntensity", 0.7);		  // 设置泛光强度
+		glodenShader.setMat4("projection", projection);
+		glodenShader.setMat4("view", view);
+		// 设置模型矩阵
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(18.0f, 8.0f, -5.0f));
+		model = glm::scale(model, glm::vec3(0.4f));
+		glodenShader.setMat4("model", model);
+		// 更新粒子位置
+		cloudRenderer.update(0.01f, 10, 10, 10);
+		// 绘制云彩
+		cloudRenderer.render(10, 10, 10);
 
 		// 设置透明度
 		float transparency = 0.8; // 设置透明度为50%
 		// 使用着色器程序
 		pointCloudShader.use();
 		// 设置uniform变量
-		pointCloudShader.setVec3("lightPos", lightPositions[1]);			 // 设置光源位置
-		pointCloudShader.setVec3("viewPos", camera.Position);				 // 设置视点位置
+		pointCloudShader.setVec3("viewPos", camera.Position);	 // 设置视点位置
+		pointCloudShader.setFloat("rimIntensity", 0.7);			 // 设置泛光强度
+		pointCloudShader.setFloat("transparency", transparency); // 设置透明度
+		pointCloudShader.setMat4("projection", projection);
+		pointCloudShader.setMat4("view", view);
+		// 修改光源的颜色和泛光颜色
+		pointCloudShader.setVec3("lightPos", lightPositions[1]);
 		pointCloudShader.setVec3("lightColor", lightColors[1]);				 // 设置光源颜色
 		pointCloudShader.setVec3("rimLightColor", glm::vec3(0.2, 0.6, 1.0)); // 设置泛光颜色
-		pointCloudShader.setFloat("rimIntensity", 0.7);						 // 设置泛光强度
-		pointCloudShader.setFloat("transparency", transparency);			 // 设置透明度
-		// 绑定纹理
-		glBindTexture(GL_TEXTURE_2D, sphereTexture);
 
+		// 纹理设置--------------------------------------------
+		glBindTexture(GL_TEXTURE_2D, sphereTexture);
 		// 设置纹理参数
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		pointCloudShader.setMat4("projection", projection);
-		pointCloudShader.setMat4("view", view);
-
-		// 启用混合功能
+		// 启用混合功能-透明效果----------------
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 		// 纹理透明球
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(10.0f, 1.0f,-5.0f));
+		model = glm::translate(model, glm::vec3(5.0f, 1.0f, 8.0f));
 		model = glm::scale(model, glm::vec3(2.0f));
 		pointCloudShader.setMat4("model", model);
 		// 渲染球体
@@ -901,20 +972,20 @@ int main()
 
 		// 透明圆台--点云球
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(10.0f, -0.5f, 0.0f));
+		model = glm::translate(model, glm::vec3(-2.0f, -0.5f, 8.0f));
 		model = glm::scale(model, glm::vec3(1.0f));
 		pointCloudShader.setMat4("model", model);
 		frustum.render();
 		// 透明圆台--粒子系统
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(13.0f, -0.5f, 5.5f));
+		model = glm::translate(model, glm::vec3(-5.0f, -0.5f, 8.0f));
 		model = glm::scale(model, glm::vec3(1.0f));
 		pointCloudShader.setMat4("model", model);
 		frustum.render();
 
 		// 透明圆台--纹理球(太丑,注释掉)
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(10.0f, -0.5f, -5.0f));
+		model = glm::translate(model, glm::vec3(5.0f, -0.5f, 8.0f));
 		model = glm::scale(model, glm::vec3(1.0f));
 		pointCloudShader.setMat4("model", model);
 		frustum.render();
@@ -924,32 +995,31 @@ int main()
 
 		// 点云绘制球体
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(10.0f, 1.0f, 0.0f));
+		model = glm::translate(model, glm::vec3(-2.0f, 1.0f, 8.0f));
 		// 绕 y 轴旋转
 		model = glm::rotate(model, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
 		model = glm::rotate(model, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 1.0f)); // 绕 X 轴旋转 90 度
-		model = glm::scale(model, glm::vec3(1.5f));		
-    	pointCloudShader.setMat4("model", model);
+		model = glm::scale(model, glm::vec3(1.5f));
+		pointCloudShader.setMat4("model", model);
 		// 设置点的大小
 		glPointSize(3.0f); // Adjust the size as needed
-    	renderSphereByPointCloud();		
+		renderSphereByPointCloud();
 
 		// 粒子系统绘制球体
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(13.0f, 2.0f, 5.5f));
+		model = glm::translate(model, glm::vec3(-5.0f, 2.0f, 8.0f));
 		// 绕 y 轴旋转
-		//model = glm::rotate(model, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
+		// model = glm::rotate(model, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
 		model = glm::rotate(model, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 1.0f)); // 绕 X 轴旋转 90 度
-		model = glm::scale(model, glm::vec3(0.4f));		
-		particleSystem.update(deltaTime);   
-    	pointCloudShader.setMat4("model", model);
+		model = glm::scale(model, glm::vec3(0.4f));
+		particleSystem.update(deltaTime);
+		pointCloudShader.setMat4("model", model);
 		// 设置点的大小
 		glPointSize(1.3f); // Adjust the size as needed
 		particleSystem.render();
-		
+
 		// 绘制正二十面体
 		// icosahedronRenderer.renderIcosahedron();
-		
 
 		// 更新旋转角度
 		angle += rotationSpeed * deltaTime; // deltaTime是上一帧到当前帧的时间间隔
@@ -959,7 +1029,6 @@ int main()
 		// 绘制内部八个正八面体
 		for (int i = 0; i < 8; ++i)
 		{
-
 			model = glm::mat4(1.0f);
 			position = cubeGroupVertices[i] * spacing;
 
@@ -991,13 +1060,14 @@ int main()
 		shaderLight.setMat4("projection", projection);
 		shaderLight.setMat4("view", view);
 
-		for (unsigned int i = 0; i < starLightPositions.size(); i++) {
+		for (unsigned int i = 0; i < starLightPositions.size(); i++)
+		{
 			glm::mat4 model = glm::mat4(1.0f);
 			model = glm::translate(model, starLightPositions[i]);
 			model = glm::scale(model, glm::vec3(0.5f)); // Adjust the size of the spheres
 			shaderLight.setMat4("model", model);
 			shaderLight.setVec3("lightColor", starLightColors[i]); // Set light color
-			sphereRenderer.renderSphere(); // Render the light as a sphere
+			sphereRenderer.renderSphere();						   // Render the light as a sphere
 		}
 		for (unsigned int i = 0; i < lightPositions.size(); i++)
 		{
@@ -1007,12 +1077,12 @@ int main()
 				model = glm::translate(model, glm::vec3(lightPositions[i]));
 				model = glm::scale(model, glm::vec3(0.5f));
 				shaderLight.setMat4("model", model);
-				shaderLight.setVec3("lightColor", lightColors[i]); 
+				shaderLight.setVec3("lightColor", lightColors[i]);
 
 				// 设置光源颜色
 				// sphereRenderer.renderSphere();
 
-				//  绘制圆锥体
+				//  绘制花朵
 				flower.render();
 			}
 			else
@@ -1026,15 +1096,6 @@ int main()
 			}
 		}
 
-		// 圆台代码
-		// model = glm::mat4(1.0f);
-		// model = glm::translate(model, glm::vec3(6.0f,1.5f,0.0f) );
-		// //model = glm::scale(model, glm::vec3(0.25f));
-		// shaderLight.setMat4("model", model);
-		// shaderLight.setVec3("lightColor", glm::vec3(2.0f,2.0f,2.0f));
-		// // 设置光源颜色		
-		// // Render the frustum
-        // frustum.render();
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 		// 2. 通过两次高斯模糊来模糊明亮的片元
@@ -1274,57 +1335,80 @@ void renderSphereByPointCloud()
 }
 
 // 设置顶点数组函数
-std::vector<glm::vec3> createVertices(float spacing, float scale, const glm::vec3& offset) {
-    // 顶点数组
-    std::vector<glm::vec3> vertices = {
-        // 小立方体的顶点
-        glm::vec3(-spacing, -spacing, -spacing),
-        glm::vec3(spacing, -spacing, -spacing),
-        glm::vec3(-spacing, spacing, -spacing),
-        glm::vec3(spacing, spacing, -spacing),
-        glm::vec3(-spacing, -spacing, spacing),
-        glm::vec3(spacing, -spacing, spacing),
-        glm::vec3(-spacing, spacing, spacing),
-        glm::vec3(spacing, spacing, spacing),
-        // 大立方体的顶点
-        glm::vec3(-spacing * 1.1, -spacing * 1.1, -spacing * 1.1),
-        glm::vec3(spacing * 1.1, -spacing * 1.1, -spacing * 1.1),
-        glm::vec3(-spacing * 1.1, spacing * 1.1, -spacing * 1.1),
-        glm::vec3(spacing * 1.1, spacing * 1.1, -spacing * 1.1),
-        glm::vec3(-spacing * 1.1, -spacing * 1.1, spacing * 1.1),
-        glm::vec3(spacing * 1.1, -spacing * 1.1, spacing * 1.1),
-        glm::vec3(-spacing * 1.1, spacing * 1.1, spacing * 1.1),
-        glm::vec3(spacing * 1.1, spacing * 1.1, spacing * 1.1),
-        // 面心
-        glm::vec3(0.0f, 0.0f, -spacing * 1.1), // 前面中心
-        glm::vec3(0.0f, 0.0f, spacing * 1.1),  // 后面中心
-        glm::vec3(-spacing * 1.1, 0.0f, 0.0f), // 左侧中心
-        glm::vec3(spacing * 1.1, 0.0f, 0.0f),  // 右侧中心
-        glm::vec3(0.0f, -spacing * 1.1, 0.0f), // 下面中心
-        glm::vec3(0.0f, spacing * 1.1, 0.0f),  // 上面中心
-        // 棱心
-        glm::vec3(-spacing * 1.1, 0.0f, -spacing * 1.1), // 前左棱心
-        glm::vec3(-spacing * 1.1, 0.0f, spacing * 1.1),  // 后左棱心
-        glm::vec3(spacing * 1.1, 0.0f, -spacing * 1.1),  // 前右棱心
-        glm::vec3(spacing * 1.1, 0.0f, spacing * 1.1),   // 后右棱心
-        glm::vec3(0.0f, -spacing * 1.1, -spacing * 1.1), // 前下棱心
-        glm::vec3(0.0f, -spacing * 1.1, spacing * 1.1),  // 后下棱心
-        glm::vec3(0.0f, spacing * 1.1, -spacing * 1.1),  // 前上棱心
-        glm::vec3(0.0f, spacing * 1.1, spacing * 1.1),   // 后上棱心
-        glm::vec3(-spacing * 1.1, -spacing * 1.1, 0.0f), // 左下棱心
-        glm::vec3(-spacing * 1.1, spacing * 1.1, 0.0f),  // 左上棱心
-        glm::vec3(spacing * 1.1, -spacing * 1.1, 0.0f),  // 右下棱心
-        glm::vec3(spacing * 1.1, spacing * 1.1, 0.0f)    // 右上棱心
-    };
+std::vector<glm::vec3> createVertices(float spacing, float scale, const glm::vec3 &offset)
+{
+	// 顶点数组
+	std::vector<glm::vec3> vertices = {
+		// 小立方体的顶点
+		glm::vec3(-spacing, -spacing, -spacing),
+		glm::vec3(spacing, -spacing, -spacing),
+		glm::vec3(-spacing, spacing, -spacing),
+		glm::vec3(spacing, spacing, -spacing),
+		glm::vec3(-spacing, -spacing, spacing),
+		glm::vec3(spacing, -spacing, spacing),
+		glm::vec3(-spacing, spacing, spacing),
+		glm::vec3(spacing, spacing, spacing),
+		// 大立方体的顶点
+		glm::vec3(-spacing * 1.1, -spacing * 1.1, -spacing * 1.1),
+		glm::vec3(spacing * 1.1, -spacing * 1.1, -spacing * 1.1),
+		glm::vec3(-spacing * 1.1, spacing * 1.1, -spacing * 1.1),
+		glm::vec3(spacing * 1.1, spacing * 1.1, -spacing * 1.1),
+		glm::vec3(-spacing * 1.1, -spacing * 1.1, spacing * 1.1),
+		glm::vec3(spacing * 1.1, -spacing * 1.1, spacing * 1.1),
+		glm::vec3(-spacing * 1.1, spacing * 1.1, spacing * 1.1),
+		glm::vec3(spacing * 1.1, spacing * 1.1, spacing * 1.1),
+		// 面心
+		glm::vec3(0.0f, 0.0f, -spacing * 1.1), // 前面中心
+		glm::vec3(0.0f, 0.0f, spacing * 1.1),  // 后面中心
+		glm::vec3(-spacing * 1.1, 0.0f, 0.0f), // 左侧中心
+		glm::vec3(spacing * 1.1, 0.0f, 0.0f),  // 右侧中心
+		glm::vec3(0.0f, -spacing * 1.1, 0.0f), // 下面中心
+		glm::vec3(0.0f, spacing * 1.1, 0.0f),  // 上面中心
+		// 棱心
+		glm::vec3(-spacing * 1.1, 0.0f, -spacing * 1.1), // 前左棱心
+		glm::vec3(-spacing * 1.1, 0.0f, spacing * 1.1),	 // 后左棱心
+		glm::vec3(spacing * 1.1, 0.0f, -spacing * 1.1),	 // 前右棱心
+		glm::vec3(spacing * 1.1, 0.0f, spacing * 1.1),	 // 后右棱心
+		glm::vec3(0.0f, -spacing * 1.1, -spacing * 1.1), // 前下棱心
+		glm::vec3(0.0f, -spacing * 1.1, spacing * 1.1),	 // 后下棱心
+		glm::vec3(0.0f, spacing * 1.1, -spacing * 1.1),	 // 前上棱心
+		glm::vec3(0.0f, spacing * 1.1, spacing * 1.1),	 // 后上棱心
+		glm::vec3(-spacing * 1.1, -spacing * 1.1, 0.0f), // 左下棱心
+		glm::vec3(-spacing * 1.1, spacing * 1.1, 0.0f),	 // 左上棱心
+		glm::vec3(spacing * 1.1, -spacing * 1.1, 0.0f),	 // 右下棱心
+		glm::vec3(spacing * 1.1, spacing * 1.1, 0.0f)	 // 右上棱心
+	};
 
-    // 应用缩放和偏移量
-    for (auto& vertex : vertices) {
-        vertex = vertex * scale + offset;
-    }
+	// 应用缩放和偏移量
+	for (auto &vertex : vertices)
+	{
+		vertex = vertex * scale + offset;
+	}
 
-    return vertices;
+	return vertices;
 }
+std::vector<float> generateParticleData(int numParticles, float cloudSize)
+{
+	std::vector<float> particleData;
+	particleData.reserve(numParticles * 3);
 
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_real_distribution<float> dis(-cloudSize / 2, cloudSize / 2);
+
+	for (int i = 0; i < numParticles; ++i)
+	{
+		float x = dis(gen);
+		float y = dis(gen);
+		float z = dis(gen);
+
+		particleData.push_back(x);
+		particleData.push_back(y);
+		particleData.push_back(z);
+	}
+
+	return particleData;
+}
 // 测试读取ply文件数据用
 void renderBunnyByPointCloud()
 {
@@ -1524,132 +1608,134 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 
 void processInput(GLFWwindow *window)
 {
-    static bool ctrlPressed = false;    // 用于跟踪 CONTROL 键的状态
-    static bool isCtrlToggleOn = false; // 用于控制摄像头移动模式切换
-    static float rotationAngle = 0.0f;  // 初始旋转角度
-    static float baseStarRotationSpeed = glm::radians(10.0f); // 基本旋转速度
-    static float starRotationSpeed = baseStarRotationSpeed; // 当前旋转速度
+	static bool ctrlPressed = false;						  // 用于跟踪 CONTROL 键的状态
+	static bool isCtrlToggleOn = false;						  // 用于控制摄像头移动模式切换
+	static float rotationAngle = 0.0f;						  // 初始旋转角度
+	static float baseStarRotationSpeed = glm::radians(10.0f); // 基本旋转速度
+	static float starRotationSpeed = baseStarRotationSpeed;	  // 当前旋转速度
 
-    // 处理旋转逻辑
-    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-    {
-        starRotationSpeed = glm::radians(20.0f); // 加快旋转速度
-        rotationAngle += starRotationSpeed * deltaTime; // 向左旋转
-    }
-    else if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-    {
-        starRotationSpeed = glm::radians(20.0f); // 加快旋转速度
-        rotationAngle -= starRotationSpeed * deltaTime; // 向右旋转
-    }
-    else
-    {
-        starRotationSpeed = baseStarRotationSpeed; // 恢复基本旋转速度
-        rotationAngle += starRotationSpeed * deltaTime; // 基本速度旋转
-    }
+	// 处理旋转逻辑
+	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+	{
+		starRotationSpeed = glm::radians(20.0f);		// 加快旋转速度
+		rotationAngle += starRotationSpeed * deltaTime; // 向左旋转
+	}
+	else if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+	{
+		starRotationSpeed = glm::radians(20.0f);		// 加快旋转速度
+		rotationAngle -= starRotationSpeed * deltaTime; // 向右旋转
+	}
+	else
+	{
+		starRotationSpeed = baseStarRotationSpeed;		// 恢复基本旋转速度
+		rotationAngle += starRotationSpeed * deltaTime; // 基本速度旋转
+	}
 
-    // 更新光源位置
-    glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), rotationAngle, glm::vec3(0.0f, 1.0f, 0.0f));
-    for (unsigned int i = 0; i < starLightPositions.size(); i++)
-    {
-        glm::vec4 newPos = rotationMatrix * glm::vec4(initialStarLightPositions[i], 1.0f);
-        starLightPositions[i] = glm::vec3(newPos);
-    }
+	// 更新光源位置
+	glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), rotationAngle, glm::vec3(0.0f, 1.0f, 0.0f));
+	for (unsigned int i = 0; i < starLightPositions.size(); i++)
+	{
+		glm::vec4 newPos = rotationMatrix * glm::vec4(initialStarLightPositions[i], 1.0f);
+		starLightPositions[i] = glm::vec3(newPos);
+	}
 
-    // 退出窗口
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-    {
-        glfwSetWindowShouldClose(window, true);
-    }
+	// 退出窗口
+	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+	{
+		glfwSetWindowShouldClose(window, true);
+	}
 
-    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS && !ctrlPressed)
-    {
-        isCtrlToggleOn = !isCtrlToggleOn;          // 切换状态
-        camera.gravityEnabled = isCtrlToggleOn;    // 应用状态到摄像机
-        ctrlPressed = true;
-    }
-    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_RELEASE)
-    {
-        ctrlPressed = false;
-    }
+	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS && !ctrlPressed)
+	{
+		isCtrlToggleOn = !isCtrlToggleOn;		// 切换状态
+		camera.gravityEnabled = isCtrlToggleOn; // 应用状态到摄像机
+		ctrlPressed = true;
+	}
+	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_RELEASE)
+	{
+		ctrlPressed = false;
+	}
 
-    // 检查是否按下 SHIFT 键
-    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-    {
-        camera.MovementSpeed = 3.0f;
-    }
-    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE)
-    {
-        camera.MovementSpeed = 1.5f;
-    }
+	// 检查是否按下 SHIFT 键
+	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+	{
+		camera.MovementSpeed = 3.0f;
+	}
+	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE)
+	{
+		camera.MovementSpeed = 1.5f;
+	}
 
-    // 相机移动
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-    {
-        camera.ProcessKeyboard(FORWARD, deltaTime);
-    }
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-    {
-        camera.ProcessKeyboard(BACKWARD, deltaTime);
-    }
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-    {
-        camera.ProcessKeyboard(LEFT, deltaTime);
-    }
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-    {
-        camera.ProcessKeyboard(RIGHT, deltaTime);
-    }
-    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-    {
-        camera.Jump();
-    }
+	// 相机移动
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+	{
+		camera.ProcessKeyboard(FORWARD, deltaTime);
+	}
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+	{
+		camera.ProcessKeyboard(BACKWARD, deltaTime);
+	}
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+	{
+		camera.ProcessKeyboard(LEFT, deltaTime);
+	}
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+	{
+		camera.ProcessKeyboard(RIGHT, deltaTime);
+	}
+	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+	{
+		camera.Jump();
+	}
 
-    // 响应上下方向键
-    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-    {
-        camera.ProcessKeyboard(UP, deltaTime);
-    }
-    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-    {
-        camera.ProcessKeyboard(DOWN, deltaTime);
-    }
+	// 响应上下方向键
+	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+	{
+		camera.ProcessKeyboard(UP, deltaTime);
+	}
+	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+	{
+		camera.ProcessKeyboard(DOWN, deltaTime);
+	}
 
-    // 切换bloom
-    if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS && !bloomKeyPressed)
-    {
-        bloom = !bloom;
-        bloomKeyPressed = true;
-    }
-    if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_RELEASE)
-    {
-        bloomKeyPressed = false;
-    }
+	// 切换bloom
+	if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS && !bloomKeyPressed)
+	{
+		bloom = !bloom;
+		bloomKeyPressed = true;
+	}
+	if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_RELEASE)
+	{
+		bloomKeyPressed = false;
+	}
 
-    // 曝光度
-    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-    {
-        if (exposure > 0.0f)
-        {
-            exposure -= 0.01f;
-        }
-        else
-            exposure = 0.0f;
-    }
-    else if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
-    {
-        exposure += 0.01f;
-    }
+	// 曝光度
+	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+	{
+		if (exposure > 0.0f)
+		{
+			exposure -= 0.01f;
+		}
+		else
+			exposure = 0.0f;
+	}
+	else if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+	{
+		exposure += 0.01f;
+	}
 
-    // 将鼠标指针从窗口中释放
-    if (glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS)
-    {
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-    }
+	// 将鼠标指针从窗口中释放
+	if (glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS)
+	{
+		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+	}
+	// 切换流星场景
+	if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
+	{
+		std::cout << "Flow" << std::endl;
+		isFlow = !isFlow; // 取反并赋值回去
+	}
 }
-
-
-
-
 
 unsigned int loadTexture(char const *path, bool gammaCorrection)
 {
@@ -1744,163 +1830,161 @@ GLuint vao[numVAOs] = {0};
 GLuint vbo[numVBOs] = {0};
 void renderCarpet(Shader &magicCarpetShader, GLuint &woodMap, glm::mat4 projection, glm::mat4 view, float currentTime)
 {
-    static GLuint VAO = 0, VBO = 0, EBO = 0;
-    if (VAO == 0)
-    {
-        float magicCarpetVertices[] = {
-            // positions        // texture Coords
-            -6.25f, 0.0f, 2.5f, 0.0f, 0.0f, // 左上
-            6.25f, 0.0f, 2.5f, 1.0f, 0.0f,  // 右上
-            6.25f, 0.0f, -2.5f, 1.0f, 1.0f, // 右下
-            -6.25f, 0.0f, -2.5f, 0.0f, 1.0f // 左下
-        };
+	static GLuint VAO = 0, VBO = 0, EBO = 0;
+	if (VAO == 0)
+	{
+		float magicCarpetVertices[] = {
+			// positions        // texture Coords
+			-6.25f, 0.0f, 2.5f, 0.0f, 0.0f, // 左上
+			6.25f, 0.0f, 2.5f, 1.0f, 0.0f,	// 右上
+			6.25f, 0.0f, -2.5f, 1.0f, 1.0f, // 右下
+			-6.25f, 0.0f, -2.5f, 0.0f, 1.0f // 左下
+		};
 
-        unsigned int indices[] = {
-            0, 1, 2, // 第一个三角形
-            0, 2, 3  // 第二个三角形
-        };
+		unsigned int indices[] = {
+			0, 1, 2, // 第一个三角形
+			0, 2, 3	 // 第二个三角形
+		};
 
-        glGenVertexArrays(1, &VAO);
-        glGenBuffers(1, &VBO);
-        glGenBuffers(1, &EBO);
+		glGenVertexArrays(1, &VAO);
+		glGenBuffers(1, &VBO);
+		glGenBuffers(1, &EBO);
 
-        glBindVertexArray(VAO);
+		glBindVertexArray(VAO);
 
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(magicCarpetVertices), magicCarpetVertices, GL_STATIC_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, VBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(magicCarpetVertices), magicCarpetVertices, GL_STATIC_DRAW);
 
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
-        glEnableVertexAttribArray(1);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
+		glEnableVertexAttribArray(1);
 
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindVertexArray(0);
-    }
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindVertexArray(0);
+	}
 
-    // 启用混合
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	// 启用混合
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    magicCarpetShader.use();
-    magicCarpetShader.setMat4("projection", projection);
-    magicCarpetShader.setMat4("view", view);
-    magicCarpetShader.setFloat("time", currentTime);
+	magicCarpetShader.use();
+	magicCarpetShader.setMat4("projection", projection);
+	magicCarpetShader.setMat4("view", view);
+	magicCarpetShader.setFloat("time", currentTime);
 
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f)); // 根据指定位置调整
-    model = glm::scale(model, glm::vec3(7.0f, 0.5f, 4.0f));       // 确保魔毯尺寸正确
-    magicCarpetShader.setMat4("model", model);
+	glm::mat4 model = glm::mat4(1.0f);
+	model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f)); // 根据指定位置调整
+	model = glm::scale(model, glm::vec3(7.0f, 0.5f, 4.0f));		 // 确保魔毯尺寸正确
+	magicCarpetShader.setMat4("model", model);
 
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, woodMap);
-    magicCarpetShader.setInt("texture1", 0);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, woodMap);
+	magicCarpetShader.setInt("texture1", 0);
 
-    glBindVertexArray(VAO);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-    glBindVertexArray(0);
+	glBindVertexArray(VAO);
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+	glBindVertexArray(0);
 
-    // 禁用混合
-    glDisable(GL_BLEND);
+	// 禁用混合
+	glDisable(GL_BLEND);
 }
-
-
 
 unsigned int sphereVAO = 0;
 unsigned int indexCount;
 
 void renderSphere()
 {
-    if (sphereVAO == 0)
-    {
-        glGenVertexArrays(1, &sphereVAO);
+	if (sphereVAO == 0)
+	{
+		glGenVertexArrays(1, &sphereVAO);
 
-        unsigned int vbo, ebo;
-        glGenBuffers(1, &vbo);
-        glGenBuffers(1, &ebo);
+		unsigned int vbo, ebo;
+		glGenBuffers(1, &vbo);
+		glGenBuffers(1, &ebo);
 
-        std::vector<glm::vec3> positions;
-        std::vector<glm::vec2> uv;
-        std::vector<glm::vec3> normals;
-        std::vector<unsigned int> indices;
+		std::vector<glm::vec3> positions;
+		std::vector<glm::vec2> uv;
+		std::vector<glm::vec3> normals;
+		std::vector<unsigned int> indices;
 
-        const unsigned int X_SEGMENTS = 64;
-        const unsigned int Y_SEGMENTS = 64;
-        const float PI = 3.14159265359;
-        for (unsigned int x = 0; x <= X_SEGMENTS; ++x)
-        {
-            for (unsigned int y = 0; y <= Y_SEGMENTS; ++y)
-            {
-                float xSegment = (float)x / (float)X_SEGMENTS;
-                float ySegment = (float)y / (float)Y_SEGMENTS;
-                float xPos = std::cos(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
-                float yPos = std::cos(ySegment * PI);
-                float zPos = std::sin(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
+		const unsigned int X_SEGMENTS = 64;
+		const unsigned int Y_SEGMENTS = 64;
+		const float PI = 3.14159265359;
+		for (unsigned int x = 0; x <= X_SEGMENTS; ++x)
+		{
+			for (unsigned int y = 0; y <= Y_SEGMENTS; ++y)
+			{
+				float xSegment = (float)x / (float)X_SEGMENTS;
+				float ySegment = (float)y / (float)Y_SEGMENTS;
+				float xPos = std::cos(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
+				float yPos = std::cos(ySegment * PI);
+				float zPos = std::sin(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
 
-                positions.push_back(glm::vec3(xPos, yPos, zPos));
-                uv.push_back(glm::vec2(xSegment, ySegment));
-                normals.push_back(glm::vec3(xPos, yPos, zPos));
-            }
-        }
+				positions.push_back(glm::vec3(xPos, yPos, zPos));
+				uv.push_back(glm::vec2(xSegment, ySegment));
+				normals.push_back(glm::vec3(xPos, yPos, zPos));
+			}
+		}
 
-        bool oddRow = false;
-        for (unsigned int y = 0; y < Y_SEGMENTS; ++y)
-        {
-            if (!oddRow)
-            {
-                for (unsigned int x = 0; x <= X_SEGMENTS; ++x)
-                {
-                    indices.push_back(y * (X_SEGMENTS + 1) + x);
-                    indices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
-                }
-            }
-            else
-            {
-                for (int x = X_SEGMENTS; x >= 0; --x)
-                {
-                    indices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
-                    indices.push_back(y * (X_SEGMENTS + 1) + x);
-                }
-            }
-            oddRow = !oddRow;
-        }
-        indexCount = indices.size();
+		bool oddRow = false;
+		for (unsigned int y = 0; y < Y_SEGMENTS; ++y)
+		{
+			if (!oddRow)
+			{
+				for (unsigned int x = 0; x <= X_SEGMENTS; ++x)
+				{
+					indices.push_back(y * (X_SEGMENTS + 1) + x);
+					indices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
+				}
+			}
+			else
+			{
+				for (int x = X_SEGMENTS; x >= 0; --x)
+				{
+					indices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
+					indices.push_back(y * (X_SEGMENTS + 1) + x);
+				}
+			}
+			oddRow = !oddRow;
+		}
+		indexCount = indices.size();
 
-        std::vector<float> data;
-        for (unsigned int i = 0; i < positions.size(); ++i)
-        {
-            data.push_back(positions[i].x);
-            data.push_back(positions[i].y);
-            data.push_back(positions[i].z);
-            if (!uv.empty())
-            {
-                data.push_back(uv[i].x);
-                data.push_back(uv[i].y);
-            }
-            if (!normals.empty())
-            {
-                data.push_back(normals[i].x);
-                data.push_back(normals[i].y);
-                data.push_back(normals[i].z);
-            }
-        }
-        glBindVertexArray(sphereVAO);
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(float), &data[0], GL_STATIC_DRAW);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
-        float stride = (3 + 2 + 3) * sizeof(float);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride, (void*)(3 * sizeof(float)));
-        glEnableVertexAttribArray(2);
-        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, stride, (void*)(5 * sizeof(float)));
-    }
+		std::vector<float> data;
+		for (unsigned int i = 0; i < positions.size(); ++i)
+		{
+			data.push_back(positions[i].x);
+			data.push_back(positions[i].y);
+			data.push_back(positions[i].z);
+			if (!uv.empty())
+			{
+				data.push_back(uv[i].x);
+				data.push_back(uv[i].y);
+			}
+			if (!normals.empty())
+			{
+				data.push_back(normals[i].x);
+				data.push_back(normals[i].y);
+				data.push_back(normals[i].z);
+			}
+		}
+		glBindVertexArray(sphereVAO);
+		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+		glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(float), &data[0], GL_STATIC_DRAW);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
+		float stride = (3 + 2 + 3) * sizeof(float);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void *)0);
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride, (void *)(3 * sizeof(float)));
+		glEnableVertexAttribArray(2);
+		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, stride, (void *)(5 * sizeof(float)));
+	}
 
-    glBindVertexArray(sphereVAO);
-    glDrawElements(GL_TRIANGLE_STRIP, indexCount, GL_UNSIGNED_INT, 0);
+	glBindVertexArray(sphereVAO);
+	glDrawElements(GL_TRIANGLE_STRIP, indexCount, GL_UNSIGNED_INT, 0);
 }

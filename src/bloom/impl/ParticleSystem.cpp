@@ -64,7 +64,28 @@ void ParticleSystem::respawnParticle(Particle& particle) {
     particle.life = 1.0f;
 }
 
+// void ParticleSystem::respawnParticle(Particle& particle) {
+//     // 火焰效果的范围
+//     float radius = 5.0f;
 
+//     // 随机生成粒子的初始位置
+//     float x = ((static_cast<float>(rand()) / RAND_MAX) * 2.0f - 1.0f) * radius;
+//     float y = ((static_cast<float>(rand()) / RAND_MAX) * 2.0f - 1.0f) * radius;
+//     float z = ((static_cast<float>(rand()) / RAND_MAX) * 2.0f - 1.0f) * radius;
+
+//     // 设置粒子的位置
+//     particle.position = glm::vec3(x, y, z);
+
+//     // 设置粒子的初始速度，模拟火焰上升效果
+//     particle.velocity = glm::vec3(0.0f, 1.0f + (static_cast<float>(rand()) / RAND_MAX) * 0.5f, 0.0f);
+
+//     // 设置粒子的颜色，从橙红色逐渐变淡到透明
+//     float alpha = 0.5f + (static_cast<float>(rand()) / RAND_MAX) * 0.5f;
+//     particle.color = glm::vec4(1.0f, 0.5f + (static_cast<float>(rand()) / RAND_MAX) * 0.5f, 0.0f, alpha);
+
+//     // 设置粒子的生命周期
+//     particle.life = 1.0f;
+// }
 // void ParticleSystem::respawnParticle(Particle& particle) {
 //     // 生成范围在 (-5.0, 5.0) 之间的随机 X 位置
 //     //rand() % 100 取模运算将随机整数限制在 0 到 99 之间
@@ -87,19 +108,30 @@ void ParticleSystem::respawnParticle(Particle& particle) {
 //     particle.life = 1.0f;
 // }
 
-
-// 粒子平移
 void ParticleSystem::update(float dt) {
     for (auto& particle : particles) {
+        // 随机变化粒子的速度
+        float velocityChange = ((static_cast<float>(rand()) / RAND_MAX) - 0.5f) * 0.1f;
+        particle.velocity.y += velocityChange;
+
+        // 添加水平方向的随机速度
+        glm::vec3 horizontalVelocity(
+            ((static_cast<float>(rand()) / RAND_MAX) - 0.5f) * 0.2f, // x 方向的速度变化
+            0.0f, // y 方向的速度变化，这里设置为0表示不变化
+            ((static_cast<float>(rand()) / RAND_MAX) - 0.5f) * 0.2f  // z 方向的速度变化
+        );
+        particle.velocity += horizontalVelocity;
+
+        // 更新粒子位置
         particle.life -= dt;
         if (particle.life > 0.0f) {
             particle.position += particle.velocity * dt;
-            particle.color.a -= dt;
         } else {
             respawnParticle(particle);
         }
     }
 }
+
 
 // 粒子旋转
 // void  ParticleSystem::update(float dt) {
