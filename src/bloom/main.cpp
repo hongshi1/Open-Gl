@@ -95,6 +95,7 @@ float topRadius = 1.0f;
 float height = 0.3f * topRadius;
 FrustumRenderer frustum(sectors, bottomRadius, topRadius, height);
 //备注：粒子系统的对象在main函数里面创建
+bool isFlow = false;
 
 float deltaTime = 0.0f; // 当前帧与上一帧之间的时间差
 float lastTime = 0.0f;	// 上一帧的时间
@@ -214,6 +215,7 @@ int main()
 	Shader magicCarpetShader("./src/bloom/shader/magic_carpet_vert.glsl", "./src/bloom/shader/magic_carpet_frag.glsl");
 	
 	Shader pointCloudShader("./src/bloom/shader/model_sphere_vert.glsl", "./src/bloom/shader/model_sphere_frag.glsl");
+	Shader glodenShader("./src/bloom/shader/model_sphere_vert.glsl", "./src/bloom/shader/model_gloden_frag.glsl");
 	// 水晶球的shader
 	Shader crystalShader("./src/bloom/shader/crystal_vert.glsl", "./src/bloom/shader/crystal_frag.glsl");
 
@@ -233,7 +235,10 @@ int main()
 	particleSystem.initialize();
 	//效果
 	// 云雾对象
-	CloudRenderer cloudRenderer(10000, 50.0f, 0.1f);
+	// 创建 CloudRenderer 对象并设置参数
+    CloudRenderer cloudRenderer; // 创建一个包含 1000 个粒子的 CloudRenderer 对象
+    // cloudRenderer.setFlowSpeed(1.0f); // 设置粒子的流动速度
+    // cloudRenderer.setFlowDirection(glm::vec3(0.0f, 1.0f, 0.0f)); // 设置粒子的流动方向
 
 	// 发光效果的参数
 	glm::vec3 glowColor = glm::vec3(0.0f, 1.0f, 0.0f); // 蓝色发光
@@ -424,23 +429,25 @@ int main()
 	// 		"./static/texture/skyboxq/pz.png",
 
 	// 		};
-	vector<std::string> faces{
-		"./static/texture/skyboxq/ny.png",
-		"./static/texture/skyboxq/nx.png",
-		"./static/texture/skyboxq/nz.png",
-		"./static/texture/skyboxq/px.png",
-		"./static/texture/skyboxq/py.png",
-		"./static/texture/skyboxq/pz.png",
-	};
-	// 全是白色星星的
+
+	// 备注：这是5-21周二之前有缝隙的一版
 	// vector<std::string> faces{
-	// 	"./static/texture/skybox/right.bmp",
-	// 	"./static/texture/skybox/left.bmp",
-	// 	"./static/texture/skybox/top.bmp",
-	// 	"./static/texture/skybox/bottom.bmp",
-	// 	"./static/texture/skybox/front.bmp",
-	// 	"./static/texture/skybox/back.bmp",
+	// 	"./static/texture/skyboxq/ny.png",
+	// 	"./static/texture/skyboxq/nx.png",
+	// 	"./static/texture/skyboxq/nz.png",
+	// 	"./static/texture/skyboxq/px.png",
+	// 	"./static/texture/skyboxq/py.png",
+	// 	"./static/texture/skyboxq/pz.png",
 	// };
+	// 全是白色星星的
+	vector<std::string> faces{
+		"./static/texture/subskybox/right.bmp",
+		"./static/texture/subskybox/left.bmp",
+		"./static/texture/subskybox/top.bmp",
+		"./static/texture/subskybox/bottom.bmp",
+		"./static/texture/subskybox/front.bmp",
+		"./static/texture/subskybox/back.bmp",
+	};
 	unsigned int cubemapTexture = loadCubemap(faces);
 
 	//unsigned int cubemapTexture = loadCubemap(faces);
@@ -688,7 +695,6 @@ int main()
 		// shader.setMat4("model", model);
 		// renderCube();
 
-		
 
 
 		model = glm::mat4(1.0f);
@@ -872,51 +878,57 @@ int main()
 		// renderPlanet(lightPos, camera.Position);
 
 
+		// 使用着色器程序
+		glodenShader.use();
+		// 设置uniform变量
+		glodenShader.setVec3("viewPos", camera.Position);     // 设置视点位置
+		glodenShader.setFloat("rimIntensity", 0.7);           // 设置泛光强度
+		glodenShader.setMat4("projection", projection);
+		glodenShader.setMat4("view", view);
+		// 设置模型矩阵
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(18.0f, 8.0f, -5.0f));
+		model = glm::scale(model, glm::vec3(0.4f));
+		glodenShader.setMat4("model", model);	
+		// 更新粒子位置
+		cloudRenderer.update(0.01f,10,10,10);
+		// 绘制云彩
+		cloudRenderer.render(10,10,10);
+		
+
 		// 设置透明度
 		float transparency = 0.8; // 设置透明度为50%
 		// 使用着色器程序
 		pointCloudShader.use();
 		// 设置uniform变量
-		pointCloudShader.setVec3("lightPos", lightPositions[1]);			 // 设置光源位置
 		pointCloudShader.setVec3("viewPos", camera.Position);				 // 设置视点位置
 		pointCloudShader.setFloat("rimIntensity", 0.7);						 // 设置泛光强度
 		pointCloudShader.setFloat("transparency", transparency);			 // 设置透明度
-		// 绑定纹理
+		pointCloudShader.setMat4("projection", projection);
+		pointCloudShader.setMat4("view", view);
+		// 修改光源的颜色和泛光颜色
+		pointCloudShader.setVec3("lightPos", lightPositions[1]);
+		pointCloudShader.setVec3("lightColor", lightColors[1]);	// 设置光源颜色
+		pointCloudShader.setVec3("rimLightColor", glm::vec3(0.2, 0.6, 1.0)); // 设置泛光颜色
+		
+		// 纹理设置--------------------------------------------
 		glBindTexture(GL_TEXTURE_2D, sphereTexture);
-
 		// 设置纹理参数
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		pointCloudShader.setMat4("projection", projection);
-		pointCloudShader.setMat4("view", view);
-
-		// 启用混合功能
+		// 启用混合功能-透明效果----------------
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-		//pointCloudShader.setVec3("lightColor", lightColors[0]);				 // 设置光源颜色
-		//pointCloudShader.setVec3("rimLightColor", glm::vec3(1.0, 1.0, 1.0)); // 设置泛光颜色
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(18.0f, 1.0f,-5.0f));
-		model = glm::scale(model, glm::vec3(0.1f));
-		pointCloudShader.setMat4("model", model);
-		// 在每一帧中更新粒子的位置数据，例如：
-		// 渲染云雾
-        cloudRenderer.render(pointCloudShader);	
-
-		pointCloudShader.setVec3("lightColor", lightColors[1]);				 // 设置光源颜色
-		pointCloudShader.setVec3("rimLightColor", glm::vec3(0.2, 0.6, 1.0)); // 设置泛光颜色
-
+			
 		// 纹理透明球
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(10.0f, 1.0f,-5.0f));
 		model = glm::scale(model, glm::vec3(2.0f));
 		pointCloudShader.setMat4("model", model);
 		// 渲染球体
-		sphereRenderer.renderSphere();
-		
+		sphereRenderer.renderSphere();		
 
 		// 透明圆台--点云球
 		model = glm::mat4(1.0f);
@@ -979,7 +991,6 @@ int main()
 		// 绘制内部八个正八面体
 		for (int i = 0; i < 8; ++i)
 		{
-
 			model = glm::mat4(1.0f);
 			position = cubeGroupVertices[i] * spacing;
 
@@ -1046,15 +1057,6 @@ int main()
 			}
 		}
 
-		// 圆台代码
-		// model = glm::mat4(1.0f);
-		// model = glm::translate(model, glm::vec3(6.0f,1.5f,0.0f) );
-		// //model = glm::scale(model, glm::vec3(0.25f));
-		// shaderLight.setMat4("model", model);
-		// shaderLight.setVec3("lightColor", glm::vec3(2.0f,2.0f,2.0f));
-		// // 设置光源颜色		
-		// // Render the frustum
-        // frustum.render();
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 		// 2. 通过两次高斯模糊来模糊明亮的片元
@@ -1684,6 +1686,13 @@ void processInput(GLFWwindow *window)
     {
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     }
+	// 切换流星场景
+	if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
+    {
+		std::cout<<"Flow"<<std::endl;
+        isFlow = !isFlow; // 取反并赋值回去
+    }
+
 }
 
 
