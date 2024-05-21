@@ -1,6 +1,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include <random>
 #include <map>
 
 #include <tool/shader.h>
@@ -30,6 +31,8 @@
 #include "ParticleSystem.h"
 // 圆台
 #include "FrustumRenderer.h"
+// 云雾系统
+#include "CloudRenderer.h"
 using namespace std;
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
@@ -52,6 +55,8 @@ void renderBunnyByPointCloud();
 void renderFlowerByPointCloud(float);
 // 组合物体的数组
 std::vector<glm::vec3> createVertices(float spacing, float scale, const glm::vec3& offset);
+// 随机生成粒子
+std::vector<float> generateParticleData(int numParticles, float cloudSize);
 
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
@@ -157,7 +162,7 @@ int main()
 	Model venus("./static/model/Venus/venus.obj");
 	Model Neptune("./static/model/Neptune/Neptune.obj");
 	Model Uranus("./static/model/Uranus/Uranus.obj");
-	Model saturn("./static/model/Saturn/13906_Saturn_v1_l3.obj.obj");
+	Model saturn("./static/model/Saturn/13906_Saturn_v1_l3.obj");
 
 	// 编译shader
 	// ----------
@@ -184,10 +189,13 @@ int main()
 	Model planet("./static/model/planet/planet.obj");
 	Model duck("./static/model/duck/duck.obj");
 	Model pedestal("./static/model/3D_scifi_pedestal/tech_pedestal.obj");
-	Shader modelShader(" vertex_shader.glsl ", " fragment_shader.glsl");
 	//粒子系统-dcy
 	ParticleSystem particleSystem;
 	particleSystem.initialize();
+	//效果
+	// 云雾对象
+	CloudRenderer cloudRenderer(10000, 50.0f, 0.1f);
+
 	// 发光效果的参数
 	glm::vec3 glowColor = glm::vec3(0.0f, 1.0f, 0.0f); // 蓝色发光
 	// 顶点数组
@@ -802,8 +810,6 @@ int main()
 		// 设置uniform变量
 		pointCloudShader.setVec3("lightPos", lightPositions[1]);			 // 设置光源位置
 		pointCloudShader.setVec3("viewPos", camera.Position);				 // 设置视点位置
-		pointCloudShader.setVec3("lightColor", lightColors[1]);				 // 设置光源颜色
-		pointCloudShader.setVec3("rimLightColor", glm::vec3(0.2, 0.6, 1.0)); // 设置泛光颜色
 		pointCloudShader.setFloat("rimIntensity", 0.7);						 // 设置泛光强度
 		pointCloudShader.setFloat("transparency", transparency);			 // 设置透明度
 		// 绑定纹理
@@ -821,6 +827,19 @@ int main()
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+		//pointCloudShader.setVec3("lightColor", lightColors[0]);				 // 设置光源颜色
+		//pointCloudShader.setVec3("rimLightColor", glm::vec3(1.0, 1.0, 1.0)); // 设置泛光颜色
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(18.0f, 1.0f,-5.0f));
+		model = glm::scale(model, glm::vec3(0.1f));
+		pointCloudShader.setMat4("model", model);
+		// 在每一帧中更新粒子的位置数据，例如：
+		// 渲染云雾
+        cloudRenderer.render(pointCloudShader);	
+
+		pointCloudShader.setVec3("lightColor", lightColors[1]);				 // 设置光源颜色
+		pointCloudShader.setVec3("rimLightColor", glm::vec3(0.2, 0.6, 1.0)); // 设置泛光颜色
+
 		// 纹理透明球
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(10.0f, 1.0f,-5.0f));
@@ -828,6 +847,7 @@ int main()
 		pointCloudShader.setMat4("model", model);
 		// 渲染球体
 		sphereRenderer.renderSphere();
+		
 
 		// 透明圆台--点云球
 		model = glm::mat4(1.0f);
@@ -851,6 +871,7 @@ int main()
 
 		// 关闭混合功能
 		glDisable(GL_BLEND);
+		
 
 		// 点云绘制球体
 		model = glm::mat4(1.0f);
@@ -933,7 +954,7 @@ int main()
 				// 设置光源颜色
 				// sphereRenderer.renderSphere();
 
-				//  绘制圆锥体
+				//  绘制花朵
 				flower.render();
 			}
 			else
@@ -1245,7 +1266,26 @@ std::vector<glm::vec3> createVertices(float spacing, float scale, const glm::vec
 
     return vertices;
 }
+std::vector<float> generateParticleData(int numParticles, float cloudSize) {
+    std::vector<float> particleData;
+    particleData.reserve(numParticles * 3);
 
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<float> dis(-cloudSize / 2, cloudSize / 2);
+
+    for (int i = 0; i < numParticles; ++i) {
+        float x = dis(gen);
+        float y = dis(gen);
+        float z = dis(gen);
+
+        particleData.push_back(x);
+        particleData.push_back(y);
+        particleData.push_back(z);
+    }
+
+    return particleData;
+}
 // 测试读取ply文件数据用
 void renderBunnyByPointCloud()
 {
