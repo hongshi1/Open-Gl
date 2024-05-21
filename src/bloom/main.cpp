@@ -224,6 +224,13 @@ int main()
 	Model planet("./static/model/planet/planet.obj");
 	Model duck("./static/model/duck/duck.obj");
 	Model pedestal("./static/model/3D_scifi_pedestal/tech_pedestal.obj");
+	Model tech_duck("./static/model/3D_scifi_pedestal/tech_pedestal.obj");
+	Model tech_wolf("./static/model/3D_scifi_pedestal/tech_pedestal.obj");
+	Model tech_skull("./static/model/3D_scifi_pedestal/tech_pedestal.obj");
+	Model tech_car1("./static/model/3D_scifi_pedestal/tech_pedestal.obj");
+	Model tech_car2("./static/model/3D_scifi_pedestal/tech_pedestal.obj");
+	Model tech_car3("./static/model/3D_scifi_pedestal/tech_pedestal.obj");
+
 	// 粒子系统-dcy
 	ParticleSystem particleSystem;
 	particleSystem.initialize();
@@ -672,12 +679,12 @@ int main()
 		// 创建一个大的立方体作为地板
 
 		// 创建多个立方体作为物体
-		glBindTexture(GL_TEXTURE_2D, containerMap);
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.0f, 1.0f, 0.0f));
-		model = glm::scale(model, glm::vec3(0.5f));
-		shader.setMat4("model", model);
-		renderCube();
+		// glBindTexture(GL_TEXTURE_2D, containerMap);
+		// model = glm::mat4(1.0f);
+		// model = glm::translate(model, glm::vec3(0.0f, 1.0f, 0.0f));
+		// model = glm::scale(model, glm::vec3(0.5f));
+		// shader.setMat4("model", model);
+		// renderCube();
 
 		// model = glm::mat4(1.0f);
 		// model = glm::translate(model, glm::vec3(2.0f, 0.0f, 1.0));
@@ -685,24 +692,24 @@ int main()
 		// shader.setMat4("model", model);
 		// renderCube();
 
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-1.0f, -1.0f, 2.0));
-		model = glm::rotate(model, glm::radians(60.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
-		shader.setMat4("model", model);
-		renderCube();
+		// model = glm::mat4(1.0f);
+		// model = glm::translate(model, glm::vec3(-1.0f, -1.0f, 2.0));
+		// model = glm::rotate(model, glm::radians(60.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
+		// shader.setMat4("model", model);
+		// renderCube();
 
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.0f, 2.7f, 4.0));
-		model = glm::rotate(model, glm::radians(23.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
-		model = glm::scale(model, glm::vec3(1.25));
-		shader.setMat4("model", model);
-		renderCube();
+		// model = glm::mat4(1.0f);
+		// model = glm::translate(model, glm::vec3(0.0f, 2.7f, 4.0));
+		// model = glm::rotate(model, glm::radians(23.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
+		// model = glm::scale(model, glm::vec3(1.25));
+		// shader.setMat4("model", model);
+		// renderCube();
 
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-2.0f, 1.0f, -3.0));
-		model = glm::rotate(model, glm::radians(124.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
-		shader.setMat4("model", model);
-		renderCube();
+		// model = glm::mat4(1.0f);
+		// model = glm::translate(model, glm::vec3(-2.0f, 1.0f, -3.0));
+		// model = glm::rotate(model, glm::radians(124.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
+		// shader.setMat4("model", model);
+		// renderCube();
 
 		crystalShader.use();
 		crystalShader.setMat4("model", model);
@@ -745,15 +752,23 @@ int main()
 		shader.use();
 		// skull
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(2.0f, -0.5f, -0.5f)); // translate it down so it's at the center of the scene
+		model = glm::translate(model, glm::vec3(-1.0f, -0.3f, 3.0f)); // translate it down so it's at the center of the scene
 		model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
 		model = glm::scale(model, glm::vec3(0.06f, 0.06f, 0.06f)); // it's a bit too big for our scene, so scale it down
 		shader.setMat4("model", model);
 		skull.Draw(shader);
 
+		// tech_skull
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-1.0f, -0.5f, 3.0f)); // translate it down so it's at the center of the scene
+		// model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
+		model = glm::scale(model, glm::vec3(0.06f, 0.06f, 0.06f)); // it's a bit too big for our scene, so scale it down
+		shader.setMat4("model", model);
+		tech_skull.Draw(shader);
+
 		// planet
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(2.0f, 0.0f, 3.0f)); // translate it down so it's at the center of the scene
+		model = glm::translate(model, glm::vec3(2.0f, 10.5f, 3.0f)); // translate it down so it's at the center of the scene
 		model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
 		model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f)); // it's a bit too big for our scene, so scale it down
 		shader.setMat4("model", model);
@@ -761,22 +776,38 @@ int main()
 
 		// wolf
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(2.0f, -0.5f, 2.0f)); // translate it down so it's at the center of the scene
+		model = glm::translate(model, glm::vec3(-3.0f, -0.3f, 3.0f)); // translate it down so it's at the center of the scene
 		model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
 		shader.setMat4("model", model);
 		wolf.Draw(shader);
 
+		// tech_wolf
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-3.0f, -0.5f, 3.0f)); // translate it down so it's at the center of the scene
+		// model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
+		model = glm::scale(model, glm::vec3(0.06f, 0.06f, 0.06f)); // it's a bit too big for our scene, so scale it down
+		shader.setMat4("model", model);
+		tech_wolf.Draw(shader);
+
 		// duck
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-1.5f, -0.5f, 4.0f)); // translate it down so it's at the center of the scene
+		model = glm::translate(model, glm::vec3(-5.0f, -0.3f, 3.0f)); // translate it down so it's at the center of the scene
 		model = glm::scale(model, glm::vec3(0.02f, 0.02f, 0.02f));
 		model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
 		shader.setMat4("model", model);
 		duck.Draw(shader);
 
+		// tech_duck
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-5.0f, -0.5f, 3.0f)); // translate it down so it's at the center of the scene
+		// model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
+		model = glm::scale(model, glm::vec3(0.06f, 0.06f, 0.06f)); // it's a bit too big for our scene, so scale it down
+		shader.setMat4("model", model);
+		tech_duck.Draw(shader);
+
 		// pedestal
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-1.5f, 2.5f, 2.0f));
+		model = glm::translate(model, glm::vec3(-1.5f, 0.0f, 3.0f));
 		model = glm::scale(model, glm::vec3(0.02f, 0.02f, 0.02f));
 		model = glm::rotate(model, glm::radians(0.0f), glm::normalize(glm::vec3(6.0, 0.0, 0.0)));
 		shader.setMat4("model", model);
@@ -784,28 +815,52 @@ int main()
 
 		// hyper1
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-5.0f, -0.5f, 0.0f));
-		model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
-		model = glm::rotate(model, glm::radians(180.0f), glm::normalize(glm::vec3(0.0, 1.0, 0.0)));
+		model = glm::translate(model, glm::vec3(12.0f, -0.3f, 1.0f));
+		model = glm::scale(model, glm::vec3(0.02f, 0.02f, 0.02f));
+		model = glm::rotate(model, glm::radians(angle / 10), glm::normalize(glm::vec3(0.0, 1.0, 0.0)));
 		shader.setMat4("model", model);
 		hyperCar1.Draw(shader);
 
+		// tech_car1
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(12.0f, -0.5f, 1.0f)); // translate it down so it's at the center of the scene
+		// model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
+		model = glm::scale(model, glm::vec3(0.06f, 0.06f, 0.06f)); // it's a bit too big for our scene, so scale it down
+		shader.setMat4("model", model);
+		tech_car1.Draw(shader);
+
 		// hyper2
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-5.0f, -0.5f, 5.0f));
+		model = glm::translate(model, glm::vec3(10.0f, -0.3f, 1.0f));
 		model = glm::scale(model, glm::vec3(0.005f, 0.005f, 0.005f));
 		model = glm::rotate(model, glm::radians(180.0f), glm::normalize(glm::vec3(0.0, 1.0, 0.0)));
 		model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
 		shader.setMat4("model", model);
 		hyperCar2.Draw(shader);
 
+		// tech_car2
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(10.0f, -0.5f, 1.0f)); // translate it down so it's at the center of the scene
+		// model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
+		model = glm::scale(model, glm::vec3(0.06f, 0.06f, 0.06f)); // it's a bit too big for our scene, so scale it down
+		shader.setMat4("model", model);
+		tech_car2.Draw(shader);
+
 		//
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-5.0f, -0.5f, -5.0f));
+		model = glm::translate(model, glm::vec3(7.0f, -0.3f, 1.0f));
 		model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
-		model = glm::rotate(model, glm::radians(180.0f), glm::normalize(glm::vec3(0.0, 1.0, 0.0)));
+		model = glm::rotate(model, glm::radians(0.0f), glm::normalize(glm::vec3(0.0, 1.0, 0.0)));
 		shader.setMat4("model", model);
 		hyperCar3.Draw(shader);
+
+		// tech_car3
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(7.0f, -0.5f, 1.0f)); // translate it down so it's at the center of the scene
+		// model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
+		model = glm::scale(model, glm::vec3(0.06f, 0.06f, 0.06f)); // it's a bit too big for our scene, so scale it down
+		shader.setMat4("model", model);
+		tech_car3.Draw(shader);
 
 		// 旋转物体
 		model = glm::mat4(1.0f);
@@ -909,7 +964,7 @@ int main()
 
 		// 纹理透明球
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(10.0f, 1.0f, -5.0f));
+		model = glm::translate(model, glm::vec3(5.0f, 1.0f, 8.0f));
 		model = glm::scale(model, glm::vec3(2.0f));
 		pointCloudShader.setMat4("model", model);
 		// 渲染球体
@@ -917,20 +972,20 @@ int main()
 
 		// 透明圆台--点云球
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(10.0f, -0.5f, 0.0f));
+		model = glm::translate(model, glm::vec3(-2.0f, -0.5f, 8.0f));
 		model = glm::scale(model, glm::vec3(1.0f));
 		pointCloudShader.setMat4("model", model);
 		frustum.render();
 		// 透明圆台--粒子系统
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(13.0f, -0.5f, 5.5f));
+		model = glm::translate(model, glm::vec3(-5.0f, -0.5f, 8.0f));
 		model = glm::scale(model, glm::vec3(1.0f));
 		pointCloudShader.setMat4("model", model);
 		frustum.render();
 
 		// 透明圆台--纹理球(太丑,注释掉)
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(10.0f, -0.5f, -5.0f));
+		model = glm::translate(model, glm::vec3(5.0f, -0.5f, 8.0f));
 		model = glm::scale(model, glm::vec3(1.0f));
 		pointCloudShader.setMat4("model", model);
 		frustum.render();
@@ -940,7 +995,7 @@ int main()
 
 		// 点云绘制球体
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(10.0f, 1.0f, 0.0f));
+		model = glm::translate(model, glm::vec3(-2.0f, 1.0f, 8.0f));
 		// 绕 y 轴旋转
 		model = glm::rotate(model, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
 		model = glm::rotate(model, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 1.0f)); // 绕 X 轴旋转 90 度
@@ -952,7 +1007,7 @@ int main()
 
 		// 粒子系统绘制球体
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(13.0f, 2.0f, 5.5f));
+		model = glm::translate(model, glm::vec3(-5.0f, 2.0f, 8.0f));
 		// 绕 y 轴旋转
 		// model = glm::rotate(model, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
 		model = glm::rotate(model, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 1.0f)); // 绕 X 轴旋转 90 度
