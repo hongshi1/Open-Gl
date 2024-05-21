@@ -12,7 +12,9 @@ enum Camera_Movement
     FORWARD,
     BACKWARD,
     LEFT,
-    RIGHT
+    RIGHT,
+    UP,
+    DOWN
 };
 
 const float YAW = -90.0f;
@@ -36,10 +38,12 @@ public:
     float MovementSpeed;
     float MouseSensitivity;
     float Zoom;
-    bool isHorizontalMode = false;
+    bool isHorizontalMode = false;      // 用于控制移动模式
+    bool gravityEnabled = false;        // 用于控制是否启用重力逻辑
     float VerticalVelocity = 0.0f; // Vertical velocity for jumping
 
-    Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = YAW, float pitch = PITCH) : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
+    Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = YAW, float pitch = PITCH) 
+        : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVITY), Zoom(ZOOM)
     {
         Position = position;
         WorldUp = up;
@@ -57,8 +61,9 @@ public:
     {
         float velocity = MovementSpeed * deltaTime;
         glm::vec3 movementDirection = Front;
+
         if (isHorizontalMode) {
-            movementDirection.y = 0;
+            movementDirection.y = 0;  // Set Y component to 0 for horizontal movement
             movementDirection = glm::normalize(movementDirection);
         }
 
@@ -70,21 +75,28 @@ public:
             Position -= Right * velocity;
         if (direction == RIGHT)
             Position += Right * velocity;
+        if (direction == UP)
+            Position.y += velocity;   // Move up along the y-axis
+        if (direction == DOWN)
+            Position.y -= velocity;   // Move down along the y-axis
 
-        // Apply gravity
-        VerticalVelocity += GRAVITY * deltaTime;
-        Position.y += VerticalVelocity * deltaTime;
+        if (gravityEnabled)
+        {
+            // Apply gravity
+            VerticalVelocity += GRAVITY * deltaTime;
+            Position.y += VerticalVelocity * deltaTime;
 
-        // Reset vertical position and velocity when landing
-        if (Position.y < 0.0f) {
-            Position.y = 0.0f;
-            VerticalVelocity = 0.0f;
+            // Reset vertical position and velocity when landing
+            if (Position.y < 0.0f) {
+                Position.y = 0.0f;
+                VerticalVelocity = 0.0f;
+            }
         }
     }
 
     void Jump()
     {
-        if (Position.y == 0.0f) {  // Only jump if on the ground
+        if (gravityEnabled && Position.y == 0.0f) {  // Only jump if on the ground and gravity is enabled
             VerticalVelocity = JUMP_SPEED;
         }
     }

@@ -47,7 +47,7 @@ void renderQuad();
 void renderCube();
 void renderBook();
 void setupVertices();
-// 绘制点云球
+
 void renderSphereByPointCloud();
 //点云兔子
 void renderBunnyByPointCloud();
@@ -61,7 +61,20 @@ std::vector<float> generateParticleData(int numParticles, float cloudSize);
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
+std::vector<unsigned int> planetTextures;
+std::vector<glm::vec3> starLightPositions;
+std::vector<glm::vec3> initialStarLightPositions;
+
+float lightMovementSpeed = glm::radians(3.0f); // 默认移动速度
+
+
+
+
+
+
 Camera camera(glm::vec3(0.0f, 0.0f, 5.0f));
+glm::vec3 lightPos(1.2f, 2.0f, 1.0f); // 初始光源位置
+
 
 // 初始化obj
 //  ImportedModel hyperCar("./static/model/hyperCar/lamborghini-aventador-pbribl.obj");
@@ -98,7 +111,33 @@ bool firstMouse = true;
 bool bloomKeyPressed = false;
 bool bloom = true;
 float exposure = 1.0;
-void renderWater(Shader &waterShader, unsigned int normalTexture, unsigned int noiseTexture, unsigned int cubeMapTexture, float deltaTime, glm::vec3 lightPos, glm::vec3 viewPos);
+void renderWater(Shader &waterShader, unsigned int normalTexture, unsigned int noiseTexture, unsigned int cubeMapTexture, float deltaTime, glm::vec3 lightPos, glm::vec3 viewPos) ;
+
+#include <string>
+#include <vector>
+
+
+void loadPlanetTextures() {
+    std::vector<std::string> planetFiles = {
+        "./static/texture/solar/earth.png",
+        "./static/texture/solar/mars.png",
+        "./static/texture/solar/neptune.png",
+        "./static/texture/solar/venus.png",
+        "./static/texture/solar/mercury.png",
+        "./static/texture/solar/sun.png"
+    };
+
+    for (const auto& file : planetFiles) {
+        planetTextures.push_back(loadTexture(file.c_str(), false));
+    }
+}
+
+struct Planet {
+    glm::vec3 position;
+    float scale;
+    unsigned int textureID;
+};
+
 
 int main()
 {
@@ -173,7 +212,7 @@ int main()
 	Shader skyboxShader("./src/bloom/shader/skybox_vert.glsl", "./src/bloom/shader/skybox_frag.glsl");
 	Shader waterShader("./src/bloom/shader/water_vert.glsl", "./src/bloom/shader/water_frag.glsl");
 	Shader magicCarpetShader("./src/bloom/shader/magic_carpet_vert.glsl", "./src/bloom/shader/magic_carpet_frag.glsl");
-	// 针对点云的shader
+	
 	Shader pointCloudShader("./src/bloom/shader/model_sphere_vert.glsl", "./src/bloom/shader/model_sphere_frag.glsl");
 	// 水晶球的shader
 	Shader crystalShader("./src/bloom/shader/crystal_vert.glsl", "./src/bloom/shader/crystal_frag.glsl");
@@ -243,6 +282,9 @@ int main()
 		-0.5f, 0.5f, -0.5f, 0.0f, 1.0f, // top-left
 		-0.5f, 0.5f, 0.5f, 0.0f, 0.0f	// bottom-left
 	};
+
+
+
 
 	float skyboxVertices[] = {
 		// positions
@@ -414,7 +456,7 @@ int main()
 
 	// 加载贴图
 	// --------
-	unsigned int woodMap = loadTexture("./static/images/b.jpg", false);
+	unsigned int woodMap = loadTexture("./static/images/light.png", false);
 	unsigned int containerMap = loadTexture("./static/texture/container2.png", true);
 	// lyy
 	// book
@@ -492,6 +534,27 @@ int main()
 	lightPositions.push_back(glm::vec3(-.8f, 2.4f, -1.0f));
 	// 点云球的球心
 	lightPositions.push_back(glm::vec3(10.0f, 1.0f, 0.0f));
+
+	
+	vector<glm::vec3> starLightColors;
+
+	std::default_random_engine generator;
+	std::uniform_real_distribution<float> distribution(-1.0f, 1.0f);
+
+	// 在星光源初始化代码中，增加 initialStarLightPositions 初始化
+	for (int i = 0; i < 100; ++i) {
+		float theta = glm::radians(distribution(generator) * 180.0f);
+		float phi = glm::radians(distribution(generator) * 360.0f);
+		float radius = 60.0f + distribution(generator) * 25.0f; // Large sphere radius
+		float x = radius * sin(theta) * cos(phi);
+		float y = radius * sin(theta) * sin(phi);
+		float z = radius * cos(theta);
+
+		starLightPositions.push_back(glm::vec3(x, y, z));
+		initialStarLightPositions.push_back(glm::vec3(x, y, z)); // 初始化初始位置
+		starLightColors.push_back(glm::vec3(distribution(generator) + 1.0f, distribution(generator) + 1.0f, distribution(generator) + 1.0f)); // Random bright colors
+	}
+
 	
 	// colors
 	vector<glm::vec3> lightColors;
@@ -598,6 +661,7 @@ int main()
 
 		shader.use();
 		shader.setMat4("projection", projection);
+		shader.setVec3("lightPos", lightPos);
 		shader.setMat4("view", view);
 		glActiveTexture(GL_TEXTURE0);
 
@@ -623,6 +687,9 @@ int main()
 		// model = glm::scale(model, glm::vec3(0.5f));
 		// shader.setMat4("model", model);
 		// renderCube();
+
+		
+
 
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(-1.0f, -1.0f, 2.0));
@@ -802,6 +869,8 @@ int main()
 		model = glm::rotate(model, glm::radians(angle / 10), glm::normalize(glm::vec3(0.0, 1.0, 0.0)));
 		shader.setMat4("model", model);
 		saturn.Draw(shader);
+		// renderPlanet(lightPos, camera.Position);
+
 
 		// 设置透明度
 		float transparency = 0.8; // 设置透明度为50%
@@ -941,6 +1010,15 @@ int main()
 		shaderLight.use();
 		shaderLight.setMat4("projection", projection);
 		shaderLight.setMat4("view", view);
+
+		for (unsigned int i = 0; i < starLightPositions.size(); i++) {
+			glm::mat4 model = glm::mat4(1.0f);
+			model = glm::translate(model, starLightPositions[i]);
+			model = glm::scale(model, glm::vec3(0.5f)); // Adjust the size of the spheres
+			shaderLight.setMat4("model", model);
+			shaderLight.setVec3("lightColor", starLightColors[i]); // Set light color
+			sphereRenderer.renderSphere(); // Render the light as a sphere
+		}
 		for (unsigned int i = 0; i < lightPositions.size(); i++)
 		{
 			if (i == lightPositions.size() - 1)
@@ -1483,95 +1561,135 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 	glViewport(0, 0, width, height);
 }
 
-// 输入监听
 void processInput(GLFWwindow *window)
 {
-	static bool ctrlPressed = false;	// 用于跟踪 CONTROL 键的状态
-	static bool isCtrlToggleOn = false; // 用于控制摄像头移动模式切换
-	// 退出窗口
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-	{
-		glfwSetWindowShouldClose(window, true);
-	}
+    static bool ctrlPressed = false;    // 用于跟踪 CONTROL 键的状态
+    static bool isCtrlToggleOn = false; // 用于控制摄像头移动模式切换
+    static float rotationAngle = 0.0f;  // 初始旋转角度
+    static float baseStarRotationSpeed = glm::radians(10.0f); // 基本旋转速度
+    static float starRotationSpeed = baseStarRotationSpeed; // 当前旋转速度
 
-	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS && !ctrlPressed)
-	{
-		isCtrlToggleOn = !isCtrlToggleOn;		  // 切换状态
-		camera.isHorizontalMode = isCtrlToggleOn; // 应用状态到摄像机
-		ctrlPressed = true;
-	}
-	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_RELEASE)
-	{
-		ctrlPressed = false;
-	}
+    // 处理旋转逻辑
+    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+    {
+        starRotationSpeed = glm::radians(20.0f); // 加快旋转速度
+        rotationAngle += starRotationSpeed * deltaTime; // 向左旋转
+    }
+    else if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+    {
+        starRotationSpeed = glm::radians(20.0f); // 加快旋转速度
+        rotationAngle -= starRotationSpeed * deltaTime; // 向右旋转
+    }
+    else
+    {
+        starRotationSpeed = baseStarRotationSpeed; // 恢复基本旋转速度
+        rotationAngle += starRotationSpeed * deltaTime; // 基本速度旋转
+    }
 
-	// 检查是否按下 SHIFT 键
+    // 更新光源位置
+    glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), rotationAngle, glm::vec3(0.0f, 1.0f, 0.0f));
+    for (unsigned int i = 0; i < starLightPositions.size(); i++)
+    {
+        glm::vec4 newPos = rotationMatrix * glm::vec4(initialStarLightPositions[i], 1.0f);
+        starLightPositions[i] = glm::vec3(newPos);
+    }
 
-	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-	{
-		camera.MovementSpeed = 3.0f;
-	}
-	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE)
-	{
-		camera.MovementSpeed = 1.5f;
-	}
+    // 退出窗口
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+    {
+        glfwSetWindowShouldClose(window, true);
+    }
 
-	// 相机移动
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-	{
-		camera.ProcessKeyboard(FORWARD, deltaTime);
-	}
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-	{
-		camera.ProcessKeyboard(BACKWARD, deltaTime);
-	}
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-	{
-		camera.ProcessKeyboard(LEFT, deltaTime);
-	}
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-	{
-		camera.ProcessKeyboard(RIGHT, deltaTime);
-	}
-	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-	{
-		camera.Jump();
-	}
+    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS && !ctrlPressed)
+    {
+        isCtrlToggleOn = !isCtrlToggleOn;          // 切换状态
+        camera.gravityEnabled = isCtrlToggleOn;    // 应用状态到摄像机
+        ctrlPressed = true;
+    }
+    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_RELEASE)
+    {
+        ctrlPressed = false;
+    }
 
-	// 切换bloom
-	if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS && !bloomKeyPressed)
-	{
-		bloom = !bloom;
-		bloomKeyPressed = true;
-	}
-	if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_RELEASE)
-	{
-		bloomKeyPressed = false;
-	}
+    // 检查是否按下 SHIFT 键
+    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+    {
+        camera.MovementSpeed = 3.0f;
+    }
+    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE)
+    {
+        camera.MovementSpeed = 1.5f;
+    }
 
-	// 曝光度
-	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-	{
+    // 相机移动
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    {
+        camera.ProcessKeyboard(FORWARD, deltaTime);
+    }
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+    {
+        camera.ProcessKeyboard(BACKWARD, deltaTime);
+    }
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+    {
+        camera.ProcessKeyboard(LEFT, deltaTime);
+    }
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+    {
+        camera.ProcessKeyboard(RIGHT, deltaTime);
+    }
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+    {
+        camera.Jump();
+    }
 
-		if (exposure > 0.0f)
-		{
-			exposure -= 0.01f;
-		}
+    // 响应上下方向键
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+    {
+        camera.ProcessKeyboard(UP, deltaTime);
+    }
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+    {
+        camera.ProcessKeyboard(DOWN, deltaTime);
+    }
 
-		else
-			exposure = 0.0f;
-	}
-	else if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
-	{
-		exposure += 0.01f;
-	}
+    // 切换bloom
+    if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS && !bloomKeyPressed)
+    {
+        bloom = !bloom;
+        bloomKeyPressed = true;
+    }
+    if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_RELEASE)
+    {
+        bloomKeyPressed = false;
+    }
 
-	// 将鼠标指针从窗口中施放
-	if (glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS)
-	{
-		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-	}
+    // 曝光度
+    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+    {
+        if (exposure > 0.0f)
+        {
+            exposure -= 0.01f;
+        }
+        else
+            exposure = 0.0f;
+    }
+    else if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+    {
+        exposure += 0.01f;
+    }
+
+    // 将鼠标指针从窗口中释放
+    if (glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS)
+    {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
 }
+
+
+
+
+
 unsigned int loadTexture(char const *path, bool gammaCorrection)
 {
 	unsigned int textureID;
@@ -1663,63 +1781,165 @@ static const int numVAOs = 1;
 static const int numVBOs = 3;
 GLuint vao[numVAOs] = {0};
 GLuint vbo[numVBOs] = {0};
-
 void renderCarpet(Shader &magicCarpetShader, GLuint &woodMap, glm::mat4 projection, glm::mat4 view, float currentTime)
 {
-	static GLuint VAO = 0, VBO = 0, EBO = 0;
-	if (VAO == 0)
-	{
-		float magicCarpetVertices[] = {
-			// positions        // texture Coords
-			-6.25f, 0.0f, 2.5f, 0.0f, 0.0f, // 左上
-			6.25f, 0.0f, 2.5f, 1.0f, 0.0f,	// 右上
-			6.25f, 0.0f, -2.5f, 1.0f, 1.0f, // 右下
-			-6.25f, 0.0f, -2.5f, 0.0f, 1.0f // 左下
-		};
+    static GLuint VAO = 0, VBO = 0, EBO = 0;
+    if (VAO == 0)
+    {
+        float magicCarpetVertices[] = {
+            // positions        // texture Coords
+            -6.25f, 0.0f, 2.5f, 0.0f, 0.0f, // 左上
+            6.25f, 0.0f, 2.5f, 1.0f, 0.0f,  // 右上
+            6.25f, 0.0f, -2.5f, 1.0f, 1.0f, // 右下
+            -6.25f, 0.0f, -2.5f, 0.0f, 1.0f // 左下
+        };
 
-		unsigned int indices[] = {
-			0, 1, 2, // 第一个三角形
-			0, 2, 3	 // 第二个三角形
-		};
+        unsigned int indices[] = {
+            0, 1, 2, // 第一个三角形
+            0, 2, 3  // 第二个三角形
+        };
 
-		glGenVertexArrays(1, &VAO);
-		glGenBuffers(1, &VBO);
-		glGenBuffers(1, &EBO);
+        glGenVertexArrays(1, &VAO);
+        glGenBuffers(1, &VBO);
+        glGenBuffers(1, &EBO);
 
-		glBindVertexArray(VAO);
+        glBindVertexArray(VAO);
 
-		glBindBuffer(GL_ARRAY_BUFFER, VBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(magicCarpetVertices), magicCarpetVertices, GL_STATIC_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(magicCarpetVertices), magicCarpetVertices, GL_STATIC_DRAW);
 
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-		// position attribute
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
-		glEnableVertexAttribArray(0);
-		// texture coord attribute
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
-		glEnableVertexAttribArray(1);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
+        glEnableVertexAttribArray(1);
 
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		glBindVertexArray(0);
-	}
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+    }
 
-	magicCarpetShader.use();
-	magicCarpetShader.setMat4("projection", projection);
-	magicCarpetShader.setMat4("view", view);
-	magicCarpetShader.setFloat("time", currentTime);
+    // 启用混合
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	glm::mat4 model = glm::mat4(1.0f);
-	model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f)); // 根据指定位置调整
-	model = glm::scale(model, glm::vec3(7.0f, 0.5f, 4.0f));		 // 确保魔毯尺寸正确
-	magicCarpetShader.setMat4("model", model);
+    magicCarpetShader.use();
+    magicCarpetShader.setMat4("projection", projection);
+    magicCarpetShader.setMat4("view", view);
+    magicCarpetShader.setFloat("time", currentTime);
 
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, woodMap);
-	magicCarpetShader.setInt("texture1", 0);
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f)); // 根据指定位置调整
+    model = glm::scale(model, glm::vec3(7.0f, 0.5f, 4.0f));       // 确保魔毯尺寸正确
+    magicCarpetShader.setMat4("model", model);
 
-	glBindVertexArray(VAO);
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-	glBindVertexArray(0);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, woodMap);
+    magicCarpetShader.setInt("texture1", 0);
+
+    glBindVertexArray(VAO);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    glBindVertexArray(0);
+
+    // 禁用混合
+    glDisable(GL_BLEND);
+}
+
+
+
+unsigned int sphereVAO = 0;
+unsigned int indexCount;
+
+void renderSphere()
+{
+    if (sphereVAO == 0)
+    {
+        glGenVertexArrays(1, &sphereVAO);
+
+        unsigned int vbo, ebo;
+        glGenBuffers(1, &vbo);
+        glGenBuffers(1, &ebo);
+
+        std::vector<glm::vec3> positions;
+        std::vector<glm::vec2> uv;
+        std::vector<glm::vec3> normals;
+        std::vector<unsigned int> indices;
+
+        const unsigned int X_SEGMENTS = 64;
+        const unsigned int Y_SEGMENTS = 64;
+        const float PI = 3.14159265359;
+        for (unsigned int x = 0; x <= X_SEGMENTS; ++x)
+        {
+            for (unsigned int y = 0; y <= Y_SEGMENTS; ++y)
+            {
+                float xSegment = (float)x / (float)X_SEGMENTS;
+                float ySegment = (float)y / (float)Y_SEGMENTS;
+                float xPos = std::cos(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
+                float yPos = std::cos(ySegment * PI);
+                float zPos = std::sin(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
+
+                positions.push_back(glm::vec3(xPos, yPos, zPos));
+                uv.push_back(glm::vec2(xSegment, ySegment));
+                normals.push_back(glm::vec3(xPos, yPos, zPos));
+            }
+        }
+
+        bool oddRow = false;
+        for (unsigned int y = 0; y < Y_SEGMENTS; ++y)
+        {
+            if (!oddRow)
+            {
+                for (unsigned int x = 0; x <= X_SEGMENTS; ++x)
+                {
+                    indices.push_back(y * (X_SEGMENTS + 1) + x);
+                    indices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
+                }
+            }
+            else
+            {
+                for (int x = X_SEGMENTS; x >= 0; --x)
+                {
+                    indices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
+                    indices.push_back(y * (X_SEGMENTS + 1) + x);
+                }
+            }
+            oddRow = !oddRow;
+        }
+        indexCount = indices.size();
+
+        std::vector<float> data;
+        for (unsigned int i = 0; i < positions.size(); ++i)
+        {
+            data.push_back(positions[i].x);
+            data.push_back(positions[i].y);
+            data.push_back(positions[i].z);
+            if (!uv.empty())
+            {
+                data.push_back(uv[i].x);
+                data.push_back(uv[i].y);
+            }
+            if (!normals.empty())
+            {
+                data.push_back(normals[i].x);
+                data.push_back(normals[i].y);
+                data.push_back(normals[i].z);
+            }
+        }
+        glBindVertexArray(sphereVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(float), &data[0], GL_STATIC_DRAW);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
+        float stride = (3 + 2 + 3) * sizeof(float);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride, (void*)(3 * sizeof(float)));
+        glEnableVertexAttribArray(2);
+        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, stride, (void*)(5 * sizeof(float)));
+    }
+
+    glBindVertexArray(sphereVAO);
+    glDrawElements(GL_TRIANGLE_STRIP, indexCount, GL_UNSIGNED_INT, 0);
 }
