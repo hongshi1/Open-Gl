@@ -844,15 +844,16 @@ int main()
 		shader.use();
 		// skull
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-1.0f, -0.3f, 3.0f)); // translate it down so it's at the center of the scene
+		model = glm::translate(model, glm::vec3(-6.0f, -0.3f, 1.0f)); // translate it down so it's at the center of the scene
 		model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
+		model = glm::rotate(model, glm::radians(90.0f), glm::normalize(glm::vec3(0.0, 0.0, 1.0)));
 		model = glm::scale(model, glm::vec3(0.06f, 0.06f, 0.06f)); // it's a bit too big for our scene, so scale it down
 		shader.setMat4("model", model);
 		skull.Draw(shader);
 
 		// tech_skull
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-1.0f, -0.5f, 3.0f)); // translate it down so it's at the center of the scene
+		model = glm::translate(model, glm::vec3(-6.0f, -0.5f, 1.0f)); // translate it down so it's at the center of the scene
 		// model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
 		model = glm::scale(model, glm::vec3(0.06f, 0.06f, 0.06f)); // it's a bit too big for our scene, so scale it down
 		shader.setMat4("model", model);
@@ -860,7 +861,7 @@ int main()
 
 		// planet
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(2.0f, 10.5f, 3.0f)); // translate it down so it's at the center of the scene
+		model = glm::translate(model, glm::vec3(2.0f, 10.5f, 2.0f)); // translate it down so it's at the center of the scene
 		model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
 		model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f)); // it's a bit too big for our scene, so scale it down
 		shader.setMat4("model", model);
@@ -868,14 +869,15 @@ int main()
 
 		// wolf
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-3.0f, -0.3f, 3.0f)); // translate it down so it's at the center of the scene
+		model = glm::translate(model, glm::vec3(-6.0f, -0.3f, 3.0f)); // translate it down so it's at the center of the scene
 		model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+		model = glm::rotate(model, glm::radians(90.0f), glm::normalize(glm::vec3(0.0, 1.0, 0.0)));
 		shader.setMat4("model", model);
 		wolf.Draw(shader);
 
 		// tech_wolf
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-3.0f, -0.5f, 3.0f)); // translate it down so it's at the center of the scene
+		model = glm::translate(model, glm::vec3(-6.0f, -0.5f, 3.0f)); // translate it down so it's at the center of the scene
 		// model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
 		model = glm::scale(model, glm::vec3(0.06f, 0.06f, 0.06f)); // it's a bit too big for our scene, so scale it down
 		shader.setMat4("model", model);
@@ -883,15 +885,16 @@ int main()
 
 		// duck
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-5.0f, -0.3f, 3.0f)); // translate it down so it's at the center of the scene
+		model = glm::translate(model, glm::vec3(-6.0f, -0.3f, 5.0f)); // translate it down so it's at the center of the scene
 		model = glm::scale(model, glm::vec3(0.02f, 0.02f, 0.02f));
 		model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
+		model = glm::rotate(model, glm::radians(90.0f), glm::normalize(glm::vec3(0.0, 0.0, 1.0)));
 		shader.setMat4("model", model);
 		duck.Draw(shader);
 
 		// tech_duck
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-5.0f, -0.5f, 3.0f)); // translate it down so it's at the center of the scene
+		model = glm::translate(model, glm::vec3(-6.0f, -0.5f, 5.0f)); // translate it down so it's at the center of the scene
 		// model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
 		model = glm::scale(model, glm::vec3(0.06f, 0.06f, 0.06f)); // it's a bit too big for our scene, so scale it down
 		shader.setMat4("model", model);
