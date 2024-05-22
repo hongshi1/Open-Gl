@@ -2216,7 +2216,7 @@ void renderCarpet(Shader &magicCarpetShader, GLuint &woodMap, glm::mat4 projecti
 	magicCarpetShader.setFloat("time", currentTime);
 
 	glm::mat4 model = glm::mat4(1.0f);
-	model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f)); // 根据指定位置调整
+	model = glm::translate(model, glm::vec3(0.0f, -2.5f, 0.0f)); // 根据指定位置调整
 	model = glm::scale(model, glm::vec3(7.0f, 0.5f, 4.0f));		 // 确保魔毯尺寸正确
 	magicCarpetShader.setMat4("model", model);
 
