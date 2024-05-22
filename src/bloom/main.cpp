@@ -3,13 +3,16 @@
 #include <iostream>
 #include <random>
 #include <map>
-
 #include <tool/shader.h>
 #include <tool/camera.h>
 #define STB_IMAGE_IMPLEMENTATION
-#include <tool/stb_image.h>
 #include <tool/gui.h>
 #include <tool/model.h>
+
+#include "Sphere.h"
+#include "Config.h"
+#include "Renderer.h"
+#include "Texture.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -33,6 +36,16 @@
 #include "FrustumRenderer.h"
 // 云雾系统
 #include "CloudRenderer.h"
+
+#include "Sphere.h"
+#include "Config.h"
+#include "Renderer.h"
+#include "Texture.h"
+#include "VertexArray.h"
+#include "VertexBuffer.h"
+#include "IndexBuffer.h"
+#include "VertexBufferLayout.h"
+
 using namespace std;
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
@@ -102,6 +115,8 @@ float lastX = SCR_WIDTH / 2.0f; // 鼠标上一帧的位置
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
 
+// 行星
+
 // bloom 设置
 bool bloomKeyPressed = false;
 bool bloom = true;
@@ -116,23 +131,55 @@ void loadPlanetTextures()
 	std::vector<std::string> planetFiles = {
 		"./static/texture/solar/earth.png",
 		"./static/texture/solar/mars.png",
-		"./static/texture/solar/neptune.png",
-		"./static/texture/solar/venus.png",
-		"./static/texture/solar/mercury.png",
-		"./static/texture/solar/sun.png"};
+		"./static/texture/solar/neptune.png", // 海王星
+		"./static/texture/solar/venus.png",	  // 金星
+		"./static/texture/solar/jupiter.png", // 木星
+		"./static/texture/solar/solar.png",	  // 太阳
+		"./static/texture/solar/mercury.png", // 水星
+		"./static/texture/solar/moon.png",
+		"./static/texture/solar/pluto.png"	// 冥王星
+		"./static/texture/solar/uranus.png" // 天王星
+		"./static/texture/solar/saturn.png"};	//土星
 
-	for (const auto &file : planetFiles)
-	{
-		planetTextures.push_back(loadTexture(file.c_str(), false));
-	}
+	// for (const auto &file : planetFiles)
+	// {
+	// 	planetTextures.push_back(loadTexture(file.c_str(), false));
+	// }
 }
 
-struct Planet
-{
-	glm::vec3 position;
-	float scale;
-	unsigned int textureID;
-};
+// //初始化各大planet
+// void GLInitData()
+// {
+// 	// 申请纹理对象 ID
+// 	glGenTextures(PLANET_COUNT, texture_id);
+
+// 	// 初始化各星球数据     纹理图片路径，           公转速度      自转速度    公转半径    自身半径    中心天体     纹理ID
+// 	planet[0] = new Planet("./static/texture/solar/solar.png", 0.0f, 0.1f, 0.0f, 15.0f, NULL, texture_id[0]);
+// 	planet[1] = new Planet("./static/texture/solar/mercury.png", 0.20f, 0.4f, 25.0f, 2.5f, planet[0], texture_id[1]);
+// 	planet[2] = new Planet("./static/texture/solar/venus.png", 0.15f, 0.5f, 38.0f, 5.0f, planet[0], texture_id[2]);
+// 	planet[3] = new Planet("./static/texture/solar/earth.png", 0.12f, 0.4f, 58.8f, 5.5f, planet[0], texture_id[3]);
+// 	planet[4] = new Planet("./static/texture/solar/moon.png", -0.20f, 0.6f, 10.0f, 2.0f, planet[3], texture_id[4]);
+// 	planet[5] = new Planet("./static/texture/solar/mars.png", 0.08f, 0.7f, 79.0f, 5.2f, planet[0], texture_id[5]);
+// 	planet[6] = new Planet("./static/texture/solar/jupiter.png", 0.14f, 0.5f, 120.0f, 11.0f, planet[0], texture_id[6]);
+// 	planet[7] = new Planet("./static/texture/solar/saturn.png", 0.09f, 0.4f, 145.0f, 7.5f, planet[0], texture_id[7]);
+// 	planet[8] = new Planet("./static/texture/solar/uranus.png", 0.13f, 0.5f, 170.0f, 6.6f, planet[0], texture_id[8]);
+// 	planet[9] = new Planet("./static/texture/solar/neptune.png", 0.16f, 0.5f, 195.0f, 6.3f, planet[0], texture_id[9]);
+// 	planet[10] = new Planet("./static/texture/solar/pluto.png", 0.11f, 0.5f, 220.0f, 6.0f, planet[0], texture_id[10]);
+
+// 	// 太阳光晕纹理导入
+// 	glGenTextures(1, &sun_light);
+// 	unsigned int width, height;
+// 	std::vector<unsigned char> sun;
+// 	unsigned int error = lodepng::decode(sun, width, height, "..\\texture\\sun_light.png");
+// 	if (error != 0)
+// 	{
+// 		std::cout << "error " << error << ": " << lodepng_error_text(error) << std::endl;
+// 		return;
+// 	}
+// 	glBindTexture(GL_TEXTURE_2D, sun_light);
+// 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+// 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+// }
 
 int main()
 {
@@ -492,6 +539,45 @@ int main()
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		// 将纹理添加到帧缓冲
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, colorBuffers[i], 0);
+	}
+
+	{
+		// 定义球体
+		Sphere mySphere(40);
+		std::vector<float> sphereVertices = mySphere.getVertices();
+		std::vector<unsigned int> sphereIndices = mySphere.getIndices();
+		VertexArray va;
+		VertexBuffer vb(&sphereVertices[0], sphereVertices.size() * sizeof(float));
+
+		VertexBufferLayout layout;
+		layout.Push<float>(3);
+		layout.Push<float>(2);
+		va.AddBuffer(layout);
+
+		IndexBuffer ib(&sphereIndices[0], sphereIndices.size()); // �������
+
+		glEnable(GL_DEPTH_TEST);
+
+
+
+		vb.Unbind();
+		va.Unbind();
+		ib.Unbind();
+
+		std::vector<std::string> planetFiles = {
+			"./static/texture/solar/earth.png",
+			"./static/texture/solar/mars.png",
+			"./static/texture/solar/neptune.png", // 海王星
+			"./static/texture/solar/venus.png",	  // 金星
+			"./static/texture/solar/jupiter.png", // 木星
+			"./static/texture/solar/solar.png",	  // 太阳
+			"./static/texture/solar/mercury.png", // 水星
+			"./static/texture/solar/moon.png",
+			"./static/texture/solar/pluto.png"	  // 冥王星
+			"./static/texture/solar/uranus.png"	  // 天王星
+			"./static/texture/solar/saturn.png"}; // 土星
+
+			
 	}
 
 	// 创建并附加到深度缓冲区

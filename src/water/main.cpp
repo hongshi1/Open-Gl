@@ -8,23 +8,23 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <tool/shader.h>
 #include <tool/camera.h>
-#define STB_IMAGE_IMPLEMENTATION
+// #define STB_IMAGE_IMPLEMENTATION
 #include <tool/stb_image.h>
 #include "Utils.h"
 
-// »Øµ÷º¯ÊýÉùÃ÷
+// ï¿½Øµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void processInput(GLFWwindow *window);
 void mouse_callback(GLFWwindow *window, double xpos, double ypos);
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
 
-// ¹¤¾ßº¯ÊýÉùÃ÷
+// ï¿½ï¿½ï¿½ßºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 unsigned int loadTexture(char const *path);
 unsigned int loadCubemap(std::vector<std::string> faces);
 void renderCube();
 void renderQuad();
 
-// È«¾Ö±äÁ¿
+// È«ï¿½Ö±ï¿½ï¿½ï¿½
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 Camera camera(glm::vec3(0.0f, 0.0f, 5.0f));
@@ -34,18 +34,18 @@ bool firstMouse = true;
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
-// ×ÅÉ«Æ÷³ÌÐò
+// ï¿½ï¿½É«ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 GLuint renderingProgramSURFACE, renderingProgramFLOOR, renderingProgramCubeMap;
 
-// ³õÊ¼»¯º¯Êý
+// ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 void init()
 {
-    // ¼ÓÔØ×ÅÉ«Æ÷³ÌÐò
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É«ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     renderingProgramSURFACE = Utils::createShaderProgram("shader/vShaderSurface.glsl", "shader/fShaderSurface.glsl");
     renderingProgramFLOOR = Utils::createShaderProgram("shader/vShaderFloor.glsl", "shader/fShaderFloor.glsl");
     renderingProgramCubeMap = Utils::createShaderProgram("shader/vShaderCube.glsl", "shader/fShaderCube.glsl");
 
-    // ÉèÖÃÎÆÀíÂ·¾¶
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â·ï¿½ï¿½
     std::string mapDir = "path/to/your/textures";
     std::string xp = mapDir + "/xp.jpg";
     std::string xn = mapDir + "/xn.jpg";
@@ -54,20 +54,20 @@ void init()
     std::string zp = mapDir + "/zp.jpg";
     std::string zn = mapDir + "/zn.jpg";
 
-    // ¼ÓÔØÁ¢·½ÌåÌùÍ¼
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¼
     std::vector<std::string> faces = { xp, xn, yp, yn, zp, zn };
     unsigned int cubemapTexture = loadCubemap(faces);
 }
 
 int main()
 {
-    // ³õÊ¼»¯GLFW
+    // ï¿½ï¿½Ê¼ï¿½ï¿½GLFW
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    // ´´½¨´°¿Ú
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     GLFWwindow *window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "OpenGL", NULL, NULL);
     if (window == NULL)
     {
@@ -81,47 +81,47 @@ int main()
     glfwSetScrollCallback(window, scroll_callback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-    // ³õÊ¼»¯GLAD
+    // ï¿½ï¿½Ê¼ï¿½ï¿½GLAD
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
 
-    // ÆôÓÃÉî¶È²âÊÔ
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È²ï¿½ï¿½ï¿½
     glEnable(GL_DEPTH_TEST);
 
-    // ³õÊ¼»¯
+    // ï¿½ï¿½Ê¼ï¿½ï¿½
     init();
 
-    // äÖÈ¾Ñ­»·
+    // ï¿½ï¿½È¾Ñ­ï¿½ï¿½
     while (!glfwWindowShouldClose(window))
     {
-        // Ã¿Ö¡Ê±¼äÂß¼­
+        // Ã¿Ö¡Ê±ï¿½ï¿½ï¿½ß¼ï¿½
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
-        // ÊäÈë
+        // ï¿½ï¿½ï¿½ï¿½
         processInput(window);
 
-        // äÖÈ¾
+        // ï¿½ï¿½È¾
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // äÖÈ¾Âß¼­£¨ÔÚÕâÀïÌí¼ÓÄúµÄäÖÈ¾´úÂë£©
+        // ï¿½ï¿½È¾ï¿½ß¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¾ï¿½ï¿½ï¿½ë£©
 
-        // ½»»»»º³å²¢ÂÖÑ¯ÊÂ¼þ
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½å²¢ï¿½ï¿½Ñ¯ï¿½Â¼ï¿½
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
-    // ÊÍ·Å×ÊÔ´
+    // ï¿½Í·ï¿½ï¿½ï¿½Ô´
     glfwTerminate();
     return 0;
 }
 
-// »Øµ÷º¯ÊýÊµÏÖ
+// ï¿½Øµï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½
 void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 {
     glViewport(0, 0, width, height);
@@ -165,7 +165,7 @@ void processInput(GLFWwindow *window)
         camera.ProcessKeyboard(RIGHT, deltaTime);
 }
 
-// ¹¤¾ßº¯ÊýÊµÏÖ
+// ï¿½ï¿½ï¿½ßºï¿½ï¿½ï¿½Êµï¿½ï¿½
 unsigned int loadTexture(char const *path)
 {
     unsigned int textureID;
