@@ -276,10 +276,12 @@ int main()
 	Model wolf("./static/model/wolf/Wolf_One_obj.obj");
 	Model planet("./static/model/planet/planet.obj");
 	Model duck("./static/model/duck/duck.obj");
+	Model plant("./static/model/plant/eb_house_plant_02.obj");
 	Model pedestal("./static/model/3D_scifi_pedestal/tech_pedestal.obj");
 	Model tech_duck("./static/model/3D_scifi_pedestal/tech_pedestal.obj");
 	Model tech_wolf("./static/model/3D_scifi_pedestal/tech_pedestal.obj");
 	Model tech_skull("./static/model/3D_scifi_pedestal/tech_pedestal.obj");
+	Model tech_plant("./static/model/3D_scifi_pedestal/tech_pedestal.obj");
 	Model tech_car1("./static/model/3D_scifi_pedestal/tech_pedestal.obj");
 	Model tech_car2("./static/model/3D_scifi_pedestal/tech_pedestal.obj");
 	Model tech_car3("./static/model/3D_scifi_pedestal/tech_pedestal.obj");
@@ -899,6 +901,20 @@ int main()
 		model = glm::scale(model, glm::vec3(0.06f, 0.06f, 0.06f)); // it's a bit too big for our scene, so scale it down
 		shader.setMat4("model", model);
 		tech_duck.Draw(shader);
+
+		// plant
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(2.0f, -0.3f, 4.0f)); // translate it down so it's at the center of the scene
+		model = glm::scale(model, glm::vec3(0.03f, 0.03f, 0.03f)); // it's a bit too big for our scene, so scale it down
+		shader.setMat4("model", model);
+		plant.Draw(shader);
+
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(2.0f, -0.5f, 4.0f)); // translate it down so it's at the center of the scene
+		model = glm::scale(model, glm::vec3(0.06f, 0.06f, 0.06f)); // it's a bit too big for our scene, so scale it down
+		shader.setMat4("model", model);
+		tech_plant.Draw(shader);
+
 
 		// pedestal
 		model = glm::mat4(1.0f);
