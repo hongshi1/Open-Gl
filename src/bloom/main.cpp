@@ -844,15 +844,16 @@ int main()
 		shader.use();
 		// skull
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-1.0f, -0.3f, 3.0f)); // translate it down so it's at the center of the scene
+		model = glm::translate(model, glm::vec3(-6.0f, -0.3f, 1.0f)); // translate it down so it's at the center of the scene
 		model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
+		model = glm::rotate(model, glm::radians(90.0f), glm::normalize(glm::vec3(0.0, 0.0, 1.0)));
 		model = glm::scale(model, glm::vec3(0.06f, 0.06f, 0.06f)); // it's a bit too big for our scene, so scale it down
 		shader.setMat4("model", model);
 		skull.Draw(shader);
 
 		// tech_skull
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-1.0f, -0.5f, 3.0f)); // translate it down so it's at the center of the scene
+		model = glm::translate(model, glm::vec3(-6.0f, -0.5f, 1.0f)); // translate it down so it's at the center of the scene
 		// model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
 		model = glm::scale(model, glm::vec3(0.06f, 0.06f, 0.06f)); // it's a bit too big for our scene, so scale it down
 		shader.setMat4("model", model);
@@ -860,7 +861,7 @@ int main()
 
 		// planet
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(2.0f, 10.5f, 3.0f)); // translate it down so it's at the center of the scene
+		model = glm::translate(model, glm::vec3(2.0f, 10.5f, 2.0f)); // translate it down so it's at the center of the scene
 		model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
 		model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f)); // it's a bit too big for our scene, so scale it down
 		shader.setMat4("model", model);
@@ -868,14 +869,15 @@ int main()
 
 		// wolf
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-3.0f, -0.3f, 3.0f)); // translate it down so it's at the center of the scene
+		model = glm::translate(model, glm::vec3(-6.0f, -0.3f, 3.0f)); // translate it down so it's at the center of the scene
 		model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+		model = glm::rotate(model, glm::radians(90.0f), glm::normalize(glm::vec3(0.0, 1.0, 0.0)));
 		shader.setMat4("model", model);
 		wolf.Draw(shader);
 
 		// tech_wolf
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-3.0f, -0.5f, 3.0f)); // translate it down so it's at the center of the scene
+		model = glm::translate(model, glm::vec3(-6.0f, -0.5f, 3.0f)); // translate it down so it's at the center of the scene
 		// model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
 		model = glm::scale(model, glm::vec3(0.06f, 0.06f, 0.06f)); // it's a bit too big for our scene, so scale it down
 		shader.setMat4("model", model);
@@ -883,15 +885,16 @@ int main()
 
 		// duck
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-5.0f, -0.3f, 3.0f)); // translate it down so it's at the center of the scene
+		model = glm::translate(model, glm::vec3(-6.0f, -0.3f, 5.0f)); // translate it down so it's at the center of the scene
 		model = glm::scale(model, glm::vec3(0.02f, 0.02f, 0.02f));
 		model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
+		model = glm::rotate(model, glm::radians(90.0f), glm::normalize(glm::vec3(0.0, 0.0, 1.0)));
 		shader.setMat4("model", model);
 		duck.Draw(shader);
 
 		// tech_duck
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-5.0f, -0.5f, 3.0f)); // translate it down so it's at the center of the scene
+		model = glm::translate(model, glm::vec3(-6.0f, -0.5f, 5.0f)); // translate it down so it's at the center of the scene
 		// model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
 		model = glm::scale(model, glm::vec3(0.06f, 0.06f, 0.06f)); // it's a bit too big for our scene, so scale it down
 		shader.setMat4("model", model);
@@ -1476,7 +1479,7 @@ unsigned int waterVAO = 0;
 unsigned int waterVBO = 0;
 void renderWater(Shader &waterShader, unsigned int normalTexture, unsigned int noiseTexture, unsigned int cubeMapTexture, float deltaTime, glm::vec3 lightPos, glm::vec3 viewPos)
 {
-	float transparency = 0.5; // Set the transparency value
+	float transparency = 0.4; // Set the transparency value
     if (waterVAO == 0)
     {
         float waterVertices[] = {
@@ -1500,8 +1503,11 @@ void renderWater(Shader &waterShader, unsigned int normalTexture, unsigned int n
     }
 
     waterShader.use();
-    glm::mat4 model = glm::mat4(1.0f);
+    
     glm::mat4 view = camera.GetViewMatrix();
+	glm::mat4 model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(0.0f, -3.0f, 0.0f));
+	model = glm::scale(model, glm::vec3(7.0f, 0.5f, 4.0f));	
     glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
     glm::mat4 normalMatrix = glm::transpose(glm::inverse(model));
 
@@ -1966,6 +1972,15 @@ void processInput(GLFWwindow *window)
 		glm::vec4 newPos = rotationMatrix * glm::vec4(initialStarLightPositions[i], 1.0f);
 		starLightPositions[i] = glm::vec3(newPos);
 	}
+	if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
+    {
+        // 按下X键时播放音频
+        // 对于Windows系统
+        system("powershell -c (New-Object Media.SoundPlayer 'D:\\PROJECT\\c++\\opengl-vscode\\static\\x.wav').PlaySync();");
+
+        // 对于Linux系统
+        // system("aplay /path/to/your/static/x.mp3");
+    }
 
 	// 退出窗口
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
@@ -2205,7 +2220,7 @@ void renderCarpet(Shader &magicCarpetShader, GLuint &woodMap, glm::mat4 projecti
 	magicCarpetShader.setFloat("time", currentTime);
 
 	glm::mat4 model = glm::mat4(1.0f);
-	model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f)); // 根据指定位置调整
+	model = glm::translate(model, glm::vec3(0.0f, -2.5f, 0.0f)); // 根据指定位置调整
 	model = glm::scale(model, glm::vec3(7.0f, 0.5f, 4.0f));		 // 确保魔毯尺寸正确
 	magicCarpetShader.setMat4("model", model);
 
