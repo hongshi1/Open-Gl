@@ -963,26 +963,17 @@ int main()
 		linkStar.Draw(linkStarShader);
 		////截止
 
-		float yOffset = 7.0;
+		float yOffset = 15.0f;
 		// Sun
 		{
-			// glm::mat4 model = glm::mat4(1.0f);
-			// model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-			// model = glm::rotate(glm::mat4(1.0f), -(float)glfwGetTime() / 5, glm::vec3(0.0f, 1.0f, 0.0f));
-			// model = glm::scale(model, glm::vec3(sunScale, sunScale, sunScale));
-			// glBindTexture(GL_TEXTURE_2D, planetsTexture[5]); // 使用太阳的纹理
-			// shader.use();
-			// shader.setMat4("model", model);
-			// sphereRenderer.renderSphere();
-
 			glm::mat4 model = glm::mat4(1.0f);
-			model = glm::translate(model, glm::vec3(0.0f, 7.0f, 0.0f)); // 将太阳向上移动
+			model = glm::translate(model, glm::vec3(0.0f, yOffset, 0.0f)); // 将太阳向上移动
 			model = glm::rotate(model, -(float)glfwGetTime() / 5, glm::vec3(0.0f, 1.0f, 0.0f));
 			model = glm::scale(model, glm::vec3(sunScale, sunScale, sunScale));
 			glm::mat4 mvp = projection * view * model;
 			glBindTexture(GL_TEXTURE_2D, planetsTexture[5]); // 使用太阳的纹理
-			shaderPlanet.use();
-			shaderPlanet.setMat4("u_MVP", mvp);
+			shader.use();
+			shader.setMat4("model", model);
 			sphereRenderer.renderSphere();
 		}
 
@@ -990,7 +981,7 @@ int main()
 		{
 			glm::mat4 model = glm::mat4(1.0f);
 			model = glm::rotate(model, (float)glfwGetTime() / 1.24f, glm::vec3(0.0f, 1.0f, 0.0f)); // 水星的公转周期约为0.24地球年
-			model = glm::translate(model, glm::vec3(1.39f, yOffset-1.0, .0f));						   // 距离太阳0.39个天文单位
+			model = glm::translate(model, glm::vec3(1.78f, yOffset - 1.0, .0f));				   // 距离太阳0.39个天文单位
 			model = glm::rotate(model, -(float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));		   // 水星的自转
 			glBindTexture(GL_TEXTURE_2D, planetsTexture[6]); // 使用水星的纹理
 			shader.use();
@@ -1001,7 +992,7 @@ int main()
 		// Venus
 		{
 			glm::mat4 model = glm::mat4(1.0f);
-			model = glm::rotate(model, (float)glfwGetTime() / 0.62f, glm::vec3(0.0f, 1.0f, 0.0f)); // 金星的公转周期约为0.62地球年
+			model = glm::rotate(model, (float)glfwGetTime() / 1.4f, glm::vec3(0.0f, 1.0f, 0.0f)); // 金星的公转周期约为0.62地球年
 			model = glm::translate(model, glm::vec3(2.72f, yOffset-1.0, .0f));						   // 距离太阳0.72个天文单位
 			model = glm::rotate(model, -(float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));		   // 金星的自转
 			glBindTexture(GL_TEXTURE_2D, planetsTexture[3]);									   // 使用金星的纹理
@@ -1014,7 +1005,7 @@ int main()
 		{
 			glm::mat4 model = glm::mat4(1.0f);
 			model = glm::rotate(model, (float)glfwGetTime() / 1.5f, glm::vec3(0.0f, 1.0f, 0.0f));
-			model = glm::translate(model, glm::vec3(SunEarthDistance, yOffset-1.0, .0f));
+			model = glm::translate(model, glm::vec3(5.0f, yOffset-1.0, .0f));
 			model = glm::rotate(model, -(float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));
 			model = glm::rotate(model, -glm::radians(ErothAxialAngle), glm::vec3(0.0, 0.0, 1.0));
 			model = glm::rotate(model, -(float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -1030,13 +1021,13 @@ int main()
 			glm::mat4 model = glm::mat4(1.0f);
 
 			model = glm::rotate(model, (float)glfwGetTime() / 1.5f, glm::vec3(0.0f, 1.0f, 0.0f));
-			model = glm::translate(model, glm::vec3(SunEarthDistance-3.0f, yOffset-1.0, .0f));
+			model = glm::translate(model, glm::vec3(5.0f, yOffset-5.0, 0.0f));
 
 			model = glm::rotate(model, (float)glfwGetTime() * 2.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-			model = glm::translate(model, glm::vec3(MoonEarthDistance-3.0f, yOffset-10, 0.0));
+			model = glm::translate(model, glm::vec3(2.0f, yOffset-5.0, 0.0));
 
 			model = glm::rotate(model, -(float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));
-			model = glm::scale(model, glm::vec3(moonScale, moonScale, moonScale));
+			model = glm::scale(model, glm::vec3(moonScale + 0.5f, moonScale + 0.5f, moonScale + 0.5f));
 			glm::mat4 mvp = projection * view * model;
 			glBindTexture(GL_TEXTURE_2D, planetsTexture[7]); // 使用月球的纹理
 			shader.use();
@@ -1060,8 +1051,8 @@ int main()
 		// Jupiter
 		{
 			glm::mat4 model = glm::mat4(1.0f);
-			model = glm::rotate(model, (float)glfwGetTime() / 11.86f, glm::vec3(0.0f, 1.0f, 0.0f)); // 木星的公转周期约为11.86地球年
-			model = glm::translate(model, glm::vec3(13.20f, yOffset-1.0, .0f));							// 距离太阳5.20个天文单位
+			model = glm::rotate(model, (float)glfwGetTime() / 2.186f, glm::vec3(0.0f, 1.0f, 0.0f)); // 木星的公转周期约为11.86地球年
+			model = glm::translate(model, glm::vec3(12.20f, yOffset-1.0, .0f));							// 距离太阳5.20个天文单位
 			model = glm::rotate(model, -(float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));			// 木星的自转
 			glBindTexture(GL_TEXTURE_2D, planetsTexture[4]);										// 使用木星的纹理
 			shader.use();
@@ -1072,8 +1063,8 @@ int main()
 		// Saturn
 		{
 			glm::mat4 model = glm::mat4(1.0f);
-			model = glm::rotate(model, (float)glfwGetTime() / 29.5f, glm::vec3(0.0f, 1.0f, 0.0f)); // 土星的公转周期约为29.5地球年
-			model = glm::translate(model, glm::vec3(15.0f, yOffset-1.0, .0f));						   // 距离太阳9.58个天文单位
+			model = glm::rotate(model, (float)glfwGetTime() / 2.95f, glm::vec3(0.0f, 1.0f, 0.0f)); // 土星的公转周期约为29.5地球年
+			model = glm::translate(model, glm::vec3(14.0f, yOffset-1.0, .0f));						   // 距离太阳9.58个天文单位
 			model = glm::rotate(model, -(float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));		   // 土星的自转
 			glBindTexture(GL_TEXTURE_2D, planetsTexture[10]);									   // 使用土星的纹理
 			shader.use();
@@ -1084,8 +1075,8 @@ int main()
 		// Uranus
 		{
 			glm::mat4 model = glm::mat4(1.0f);
-			model = glm::rotate(model, (float)glfwGetTime() / 84.0f, glm::vec3(0.0f, 1.0f, 0.0f)); // 天王星的公转周期约为84.0地球年
-			model = glm::translate(model, glm::vec3(17.0f, yOffset-1.0, .0f));						   // 距离太阳19.18个天文单位
+			model = glm::rotate(model, (float)glfwGetTime() / 4.80f, glm::vec3(0.0f, 1.0f, 0.0f)); // 天王星的公转周期约为84.0地球年
+			model = glm::translate(model, glm::vec3(16.0f, yOffset-1.0, .0f));						   // 距离太阳19.18个天文单位
 			model = glm::rotate(model, -(float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));		   // 天王星的自转
 			glBindTexture(GL_TEXTURE_2D, planetsTexture[9]);									   // 使用天王星的纹理
 			shader.use();
@@ -1096,8 +1087,8 @@ int main()
 		// Neptune
 		{
 			glm::mat4 model = glm::mat4(1.0f);
-			model = glm::rotate(model, (float)glfwGetTime() / 164.8f, glm::vec3(0.0f, 1.0f, 0.0f)); // 海王星的公转周期约为164.8地球年
-			model = glm::translate(model, glm::vec3(20.0f, yOffset-1.0, .0f));							// 距离太阳30.07个天文单位
+			model = glm::rotate(model, (float)glfwGetTime() / 6.48f, glm::vec3(0.0f, 1.0f, 0.0f)); // 海王星的公转周期约为164.8地球年
+			model = glm::translate(model, glm::vec3(19.0f, yOffset-1.0, .0f));							// 距离太阳30.07个天文单位
 			model = glm::rotate(model, -(float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));			// 海王星的自转
 			glBindTexture(GL_TEXTURE_2D, planetsTexture[2]);										// 使用海王星的纹理
 			shader.use();
@@ -1108,7 +1099,7 @@ int main()
 		// Pluto
 		{
 			glm::mat4 model = glm::mat4(1.0f);
-			model = glm::rotate(model, (float)glfwGetTime() / 247.9f, glm::vec3(0.0f, 1.0f, 0.0f)); // 冥王星的公转周期约为247.9地球年
+			model = glm::rotate(model, (float)glfwGetTime() / 8.79f, glm::vec3(0.0f, 1.0f, 0.0f)); // 冥王星的公转周期约为247.9地球年
 			model = glm::translate(model, glm::vec3(22.0f, yOffset-1.0, .0f));							// 距离太阳39.48个天文单位
 			model = glm::rotate(model, -(float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));			// 冥王星的自转
 			glBindTexture(GL_TEXTURE_2D, planetsTexture[8]);										// 使用冥王星的纹理
