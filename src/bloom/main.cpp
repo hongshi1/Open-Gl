@@ -58,7 +58,9 @@ void renderCarpet(Shader &magicCarpetShader, GLuint &woodMap, glm::mat4 projecti
 
 void renderQuad();
 void renderCube();
+void renderDodecahedron();
 void renderBook();
+void renderIcosahedron();
 void setupVertices();
 
 void renderSphereByPointCloud();
@@ -509,7 +511,7 @@ int main()
 	// 加载贴图
 	// --------
 	unsigned int woodMap = loadTexture("./static/images/light.png", false);
-	unsigned int containerMap = loadTexture("./static/texture/container2.png", true);
+	unsigned int containerMap = loadTexture("./static/texture/toy_box_normal.png", true);
 	// lyy
 	// book
 	unsigned int texture1 = loadTexture("./static/texture/book/book.jpg", true);
@@ -632,11 +634,11 @@ int main()
 	std::uniform_real_distribution<float> distribution(-1.0f, 1.0f);
 
 	// 在星光源初始化代码中，增加 initialStarLightPositions 初始化
-	for (int i = 0; i < 100; ++i)
+	for (int i = 0; i < 200; ++i)
 	{
 		float theta = glm::radians(distribution(generator) * 180.0f);
 		float phi = glm::radians(distribution(generator) * 360.0f);
-		float radius = 60.0f + distribution(generator) * 25.0f; // Large sphere radius
+		float radius = 70.0f + distribution(generator) * 50.0f; // Large sphere radius
 		float x = radius * sin(theta) * cos(phi);
 		float y = radius * sin(theta) * sin(phi);
 		float z = radius * cos(theta);
@@ -737,7 +739,7 @@ int main()
 
 		// glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		// 导入光源位置和摄像机位置
-		glm::vec3 lightPos(1.2f, 2.0f, 1.0f);
+		glm::vec3 lightPos(15.2f, 2.0f, 1.0f);
 		// glm::vec3 lightPos(1.2f, 2.0f, 1.0f);
 
 		renderWater(waterShader, normalTexture, noiseTexture, cubemapTexture, deltaTime, lightPos, camera.Position);
@@ -765,37 +767,38 @@ int main()
 		// 创建一个大的立方体作为地板
 
 		// 创建多个立方体作为物体
-		// glBindTexture(GL_TEXTURE_2D, containerMap);
-		// model = glm::mat4(1.0f);
-		// model = glm::translate(model, glm::vec3(0.0f, 1.0f, 0.0f));
-		// model = glm::scale(model, glm::vec3(0.5f));
-		// shader.setMat4("model", model);
-		// renderCube();
+		glBindTexture(GL_TEXTURE_2D, containerMap);
+		model = glm::mat4(0.5f);
+		model = glm::translate(model, glm::vec3(0.0f, 1.0f, 0.0f));
+		model = glm::scale(model, glm::vec3(0.5f));
+		shader.setMat4("model", model);
+		
+		renderIcosahedron();
 
-		// model = glm::mat4(1.0f);
-		// model = glm::translate(model, glm::vec3(2.0f, 0.0f, 1.0));
-		// model = glm::scale(model, glm::vec3(0.5f));
-		// shader.setMat4("model", model);
-		// renderCube();
+		model = glm::mat4(0.5f);
+		model = glm::translate(model, glm::vec3(2.0f, 0.0f, 1.0));
+		model = glm::scale(model, glm::vec3(0.5f));
+		shader.setMat4("model", model);
+		renderIcosahedron();
 
-		// model = glm::mat4(1.0f);
-		// model = glm::translate(model, glm::vec3(-1.0f, -1.0f, 2.0));
-		// model = glm::rotate(model, glm::radians(60.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
-		// shader.setMat4("model", model);
-		// renderCube();
+		model = glm::mat4(0.5f);
+		model = glm::translate(model, glm::vec3(-1.0f, -1.0f, 2.0));
+		model = glm::rotate(model, glm::radians(60.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
+		shader.setMat4("model", model);
+		renderIcosahedron();
 
-		// model = glm::mat4(1.0f);
-		// model = glm::translate(model, glm::vec3(0.0f, 2.7f, 4.0));
-		// model = glm::rotate(model, glm::radians(23.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
-		// model = glm::scale(model, glm::vec3(1.25));
-		// shader.setMat4("model", model);
-		// renderCube();
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(0.0f, 2.7f, 4.0));
+		model = glm::rotate(model, glm::radians(23.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
+		model = glm::scale(model, glm::vec3(1.25));
+		shader.setMat4("model", model);
+		renderIcosahedron();
 
-		// model = glm::mat4(1.0f);
-		// model = glm::translate(model, glm::vec3(-2.0f, 1.0f, -3.0));
-		// model = glm::rotate(model, glm::radians(124.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
-		// shader.setMat4("model", model);
-		// renderCube();
+		model = glm::mat4(0.5f);
+		model = glm::translate(model, glm::vec3(-2.0f, 1.0f, -3.0));
+		model = glm::rotate(model, glm::radians(124.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
+		shader.setMat4("model", model);
+		renderIcosahedron();
 
 		crystalShader.use();
 		crystalShader.setMat4("model", model);
@@ -825,7 +828,7 @@ int main()
 		glBindTexture(GL_TEXTURE_2D, texture4);
 
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.5f, 0.0f, 3.0f)); // 设置书本位置
+		model = glm::translate(model, glm::vec3(-10.5f, 0.0f, 3.0f)); // 设置书本位置
 		model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 		model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));
 
@@ -1236,6 +1239,67 @@ int main()
 	return 0;
 }
 
+unsigned int dodecahedronVAO = 0;
+unsigned int dodecahedronVBO = 0;
+unsigned int dodecahedronEBO = 0;
+
+void renderDodecahedron()
+{
+    if (dodecahedronVAO == 0)
+    {
+        float vertices[] = {
+            // Vertex positions       // Normals            // Texture Coords
+             0.607f,  0.000f,  0.795f,  0.607f,  0.000f,  0.795f,  0.5f,  1.0f,  // 0
+            -0.607f,  0.000f,  0.795f, -0.607f,  0.000f,  0.795f,  0.0f,  1.0f,  // 1
+             0.982f,  0.795f,  0.000f,  0.982f,  0.795f,  0.000f,  0.5f,  0.5f,  // 2
+            -0.982f,  0.795f,  0.000f, -0.982f,  0.795f,  0.000f,  0.0f,  0.5f,  // 3
+             0.000f,  1.295f,  0.795f,  0.000f,  1.295f,  0.795f,  0.5f,  0.0f,  // 4
+             0.982f, -0.795f,  0.000f,  0.982f, -0.795f,  0.000f,  1.0f,  0.5f,  // 5
+            -0.982f, -0.795f,  0.000f, -0.982f, -0.795f,  0.000f,  0.0f,  0.5f,  // 6
+             0.000f, -1.295f,  0.795f,  0.000f, -1.295f,  0.795f,  0.5f,  0.0f,  // 7
+             0.607f,  0.000f, -0.795f,  0.607f,  0.000f, -0.795f,  0.5f,  0.0f,  // 8
+            -0.607f,  0.000f, -0.795f, -0.607f,  0.000f, -0.795f,  0.0f,  0.0f,  // 9
+             0.000f,  1.295f, -0.795f,  0.000f,  1.295f, -0.795f,  1.0f,  1.0f,  // 10
+             0.000f, -1.295f, -0.795f,  0.000f, -1.295f, -0.795f,  0.5f,  0.5f   // 11
+        };
+
+        unsigned int indices[] = {
+            0, 1, 3, 0, 3, 4, 0, 4, 2, 1, 0, 5,
+            5, 0, 2, 1, 5, 6, 1, 6, 3, 3, 6, 7,
+            3, 7, 4, 4, 7, 8, 4, 8, 2, 2, 8, 5,
+            5, 8, 9, 6, 5, 9, 6, 9, 7, 7, 9, 10,
+            7, 10, 8, 8, 10, 9, 9, 10, 11, 10, 11, 8
+        };
+
+        glGenVertexArrays(1, &dodecahedronVAO);
+        glGenBuffers(1, &dodecahedronVBO);
+        glGenBuffers(1, &dodecahedronEBO);
+
+        glBindVertexArray(dodecahedronVAO);
+
+        glBindBuffer(GL_ARRAY_BUFFER, dodecahedronVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, dodecahedronEBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)0);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(3 * sizeof(float)));
+        glEnableVertexAttribArray(2);
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(6 * sizeof(float)));
+
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+    }
+
+    glBindVertexArray(dodecahedronVAO);
+    glDrawElements(GL_TRIANGLES, 60, GL_UNSIGNED_INT, 0);
+    glBindVertexArray(0);
+}
+
+
 unsigned int cubeVAO = 0;
 unsigned int cubeVBO = 0;
 void renderCube()
@@ -1363,6 +1427,81 @@ void renderWater(Shader &waterShader, unsigned int normalTexture, unsigned int n
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 	glBindVertexArray(0);
 }
+unsigned int icosahedronVAO = 0;
+unsigned int icosahedronVBO = 0;
+unsigned int icosahedronEBO = 0;
+
+void renderIcosahedron()
+{
+    if (icosahedronVAO == 0)
+    {
+        float t = (1.0 + sqrt(5.0)) / 2.0;
+        float vertices[] = {
+            // positions          // texture coords
+            -1,  t,  0,          0.0f, 1.0f,
+             1,  t,  0,          1.0f, 1.0f,
+            -1, -t,  0,          0.0f, 0.0f,
+             1, -t,  0,          1.0f, 0.0f,
+             0, -1,  t,          0.5f, 0.0f,
+             0,  1,  t,          0.5f, 1.0f,
+             0, -1, -t,          0.5f, 0.0f,
+             0,  1, -t,          0.5f, 1.0f,
+             t,  0, -1,          1.0f, 0.5f,
+             t,  0,  1,          1.0f, 0.5f,
+            -t,  0, -1,          0.0f, 0.5f,
+            -t,  0,  1,          0.0f, 0.5f,
+        };
+
+        unsigned int indices[] = {
+            0, 11,  5,
+            0,  5,  1,
+            0,  1,  7,
+            0,  7, 10,
+            0, 10, 11,
+            1,  5,  9,
+            5, 11,  4,
+            11, 10,  2,
+            10,  7,  6,
+            7,  1,  8,
+            3,  9,  4,
+            3,  4,  2,
+            3,  2,  6,
+            3,  6,  8,
+            3,  8,  9,
+            4,  9,  5,
+            2,  4, 11,
+            6,  2, 10,
+            8,  6,  7,
+            9,  8,  1,
+        };
+
+        glGenVertexArrays(1, &icosahedronVAO);
+        glGenBuffers(1, &icosahedronVBO);
+        glGenBuffers(1, &icosahedronEBO);
+
+        glBindVertexArray(icosahedronVAO);
+
+        glBindBuffer(GL_ARRAY_BUFFER, icosahedronVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, icosahedronEBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+    }
+
+    glBindVertexArray(icosahedronVAO);
+    glDrawElements(GL_TRIANGLES, 60, GL_UNSIGNED_INT, 0);
+    glBindVertexArray(0);
+}
+
 
 // 绘制点云球体
 void renderSphereByPointCloud()
