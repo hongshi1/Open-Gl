@@ -61,6 +61,7 @@ enum STARS
 #define SAT_DIS 428.10
 #define URA_DIS 848.00
 #define NEP_DIS 949.10
+#define PLU_DIS 1010.10
 
 #define MER_SPEED 87.0
 #define VEN_SPEED 225.0
@@ -71,3 +72,4 @@ enum STARS
 #define SAT_SPEED 3225.6
 #define URA_SPEED 3066.4
 #define NEP_SPEED 6014.8
+#define PLU_SPEED 4099.6
