@@ -1376,7 +1376,7 @@ unsigned int waterVAO = 0;
 unsigned int waterVBO = 0;
 void renderWater(Shader &waterShader, unsigned int normalTexture, unsigned int noiseTexture, unsigned int cubeMapTexture, float deltaTime, glm::vec3 lightPos, glm::vec3 viewPos)
 {
-	float transparency = 0.5; // Set the transparency value
+	float transparency = 0.4; // Set the transparency value
     if (waterVAO == 0)
     {
         float waterVertices[] = {
@@ -1400,8 +1400,10 @@ void renderWater(Shader &waterShader, unsigned int normalTexture, unsigned int n
     }
 
     waterShader.use();
-    glm::mat4 model = glm::mat4(1.0f);
+    
     glm::mat4 view = camera.GetViewMatrix();
+	glm::mat4 model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(0.0f, -3.0f, 0.0f));
     glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
     glm::mat4 normalMatrix = glm::transpose(glm::inverse(model));
 
