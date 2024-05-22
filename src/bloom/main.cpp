@@ -1376,56 +1376,59 @@ unsigned int waterVAO = 0;
 unsigned int waterVBO = 0;
 void renderWater(Shader &waterShader, unsigned int normalTexture, unsigned int noiseTexture, unsigned int cubeMapTexture, float deltaTime, glm::vec3 lightPos, glm::vec3 viewPos)
 {
-	if (waterVAO == 0)
-	{
-		float waterVertices[] = {
-			-10.0f, 0.0f, -10.0f, 0.0f, 0.0f,
-			10.0f, 0.0f, -10.0f, 1.0f, 0.0f,
-			-10.0f, 0.0f, 10.0f, 0.0f, 1.0f,
-			10.0f, 0.0f, -10.0f, 1.0f, 0.0f,
-			10.0f, 0.0f, 10.0f, 1.0f, 1.0f,
-			-10.0f, 0.0f, 10.0f, 0.0f, 1.0f};
+	float transparency = 0.5; // Set the transparency value
+    if (waterVAO == 0)
+    {
+        float waterVertices[] = {
+            -10.0f, 0.0f, -10.0f, 0.0f, 0.0f,
+            10.0f, 0.0f, -10.0f, 1.0f, 0.0f,
+            -10.0f, 0.0f, 10.0f, 0.0f, 1.0f,
+            10.0f, 0.0f, -10.0f, 1.0f, 0.0f,
+            10.0f, 0.0f, 10.0f, 1.0f, 1.0f,
+            -10.0f, 0.0f, 10.0f, 0.0f, 1.0f
+        };
 
-		glGenVertexArrays(1, &waterVAO);
-		glGenBuffers(1, &waterVBO);
-		glBindVertexArray(waterVAO);
-		glBindBuffer(GL_ARRAY_BUFFER, waterVBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(waterVertices), waterVertices, GL_STATIC_DRAW);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
-	}
+        glGenVertexArrays(1, &waterVAO);
+        glGenBuffers(1, &waterVBO);
+        glBindVertexArray(waterVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, waterVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(waterVertices), waterVertices, GL_STATIC_DRAW);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    }
 
-	waterShader.use();
-	glm::mat4 model = glm::mat4(1.0f);
-	glm::mat4 view = camera.GetViewMatrix();
-	glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-	glm::mat4 normalMatrix = glm::transpose(glm::inverse(model));
+    waterShader.use();
+    glm::mat4 model = glm::mat4(1.0f);
+    glm::mat4 view = camera.GetViewMatrix();
+    glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+    glm::mat4 normalMatrix = glm::transpose(glm::inverse(model));
 
-	waterShader.setMat4("ModelMatrix", model);
-	waterShader.setMat4("IT_ModelMatrix", normalMatrix);
-	waterShader.setMat4("ViewMatrix", view);
-	waterShader.setMat4("ProjectMatrix", projection);
-	waterShader.setVec3("cameraPos", camera.Position);
-	waterShader.setVec3("LightLocation", lightPos);
-	waterShader.setFloat("totalTime", glfwGetTime());
+    waterShader.setMat4("ModelMatrix", model);
+    waterShader.setMat4("IT_ModelMatrix", normalMatrix);
+    waterShader.setMat4("ViewMatrix", view);
+    waterShader.setMat4("ProjectMatrix", projection);
+    waterShader.setVec3("cameraPos", camera.Position);
+    waterShader.setVec3("LightLocation", lightPos);
+    waterShader.setFloat("totalTime", glfwGetTime());
+    waterShader.setFloat("transparency", transparency); // Set the transparency value
 
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, normalTexture);
-	waterShader.setInt("T_Water_N", 0);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, normalTexture);
+    waterShader.setInt("T_Water_N", 0);
 
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMapTexture);
-	waterShader.setInt("cubeMap", 1);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMapTexture);
+    waterShader.setInt("cubeMap", 1);
 
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, noiseTexture);
-	waterShader.setInt("T_Perlin_Noise_M", 2);
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, noiseTexture);
+    waterShader.setInt("T_Perlin_Noise_M", 2);
 
-	glBindVertexArray(waterVAO);
-	glDrawArrays(GL_TRIANGLES, 0, 6);
-	glBindVertexArray(0);
+    glBindVertexArray(waterVAO);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindVertexArray(0);
 }
 unsigned int icosahedronVAO = 0;
 unsigned int icosahedronVBO = 0;
