@@ -1977,6 +1977,15 @@ void processInput(GLFWwindow *window)
 		glm::vec4 newPos = rotationMatrix * glm::vec4(initialStarLightPositions[i], 1.0f);
 		starLightPositions[i] = glm::vec3(newPos);
 	}
+	if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
+    {
+        // 按下X键时播放音频
+        // 对于Windows系统
+        system("powershell -c (New-Object Media.SoundPlayer 'D:\\PROJECT\\c++\\opengl-vscode\\static\\x.wav').PlaySync();");
+
+        // 对于Linux系统
+        // system("aplay /path/to/your/static/x.mp3");
+    }
 
 	// 退出窗口
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
